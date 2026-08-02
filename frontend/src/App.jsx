@@ -129,17 +129,44 @@ function App() {
     }
   };
 
-  // Scan image via FastAPI backend
+  // Scan image via FastAPI backend and automatically assist user based on scan results
   const handleScan = async () => {
     if (!selectedFile) return;
     setLoadingScan(true);
+    setLoadingChat(true);
     const formData = new FormData();
     formData.append('file', selectedFile);
 
     try {
       const response = await axios.post(`${backendUrl}/api/scan-image`, formData);
-      setScanResult(response.data);
+      const data = response.data;
+      setScanResult(data);
       showToast("✅ Image scan complete!");
+
+      // Auto-assist user in AI Chat window based on scan data results
+      try {
+        const isFake = data.is_ai_generated;
+        const confidencePct = Math.round((data.confidence || 0) * 100);
+
+        const chatFormData = new URLSearchParams();
+        chatFormData.append('user_message', `Summarize the image analysis result and give me safety advice. The image is ${isFake ? 'AI Generated Fake' : 'Real Photograph'} with ${confidencePct}% confidence.`);
+        chatFormData.append('is_fake', isFake);
+
+        const chatResponse = await axios.post(`${backendUrl}/api/chat`, chatFormData, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        const aiAdvice = chatResponse.data.ai_response;
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: `📊 **Automated Scan Analysis & Assistance**:\n\n${aiAdvice}`
+          }
+        ]);
+      } catch (chatErr) {
+        console.error("Auto AI assistance failed:", chatErr);
+      }
     } catch (err) {
       console.error(err);
       showToast("⚠️ Could not connect to backend server. Please verify backend URL.");
@@ -153,6 +180,7 @@ function App() {
       });
     } finally {
       setLoadingScan(false);
+      setLoadingChat(false);
     }
   };
 
