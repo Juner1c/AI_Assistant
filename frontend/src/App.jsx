@@ -1,10 +1,21 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Automatically detect host machine IP or custom environment URL for group mates
+const getDefaultBackendUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+  return `http://${hostname}:8000`;
+};
 
 function App() {
+  const [backendUrl, setBackendUrl] = useState(() => {
+    return localStorage.getItem('mindspark_backend_url') || getDefaultBackendUrl();
+  });
+  const [serverStatus, setServerStatus] = useState('checking'); // 'online', 'offline', 'checking'
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [scanResult, setScanResult] = useState(null);
@@ -14,16 +25,44 @@ function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // 'about', 'features', 'how-it-works', 'blog', or null
+  const [activeModal, setActiveModal] = useState(null); // 'about', 'features', 'how-it-works', 'blog', 'server', or null
   const [toastMessage, setToastMessage] = useState(null);
 
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
 
+  // Check backend server connection on startup or URL change
+  useEffect(() => {
+    checkServerHealth(backendUrl);
+  }, [backendUrl]);
+
+  const checkServerHealth = async (url) => {
+    setServerStatus('checking');
+    try {
+      const res = await axios.get(`${url}/api/health`, { timeout: 3000 });
+      if (res.data && res.data.status === 'ok') {
+        setServerStatus('online');
+      } else {
+        setServerStatus('offline');
+      }
+    } catch (err) {
+      setServerStatus('offline');
+    }
+  };
+
+  const updateBackendUrl = (newUrl) => {
+    const formatted = newUrl.trim().replace(/\/+$/, '');
+    setBackendUrl(formatted);
+    localStorage.setItem('mindspark_backend_url', formatted);
+    showToast(`🌐 Backend URL updated to ${formatted}`);
+    checkServerHealth(formatted);
+  };
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
 
   // Handle image selection
   const handleImageChange = (e) => {
@@ -171,6 +210,14 @@ function App() {
         </ul>
 
         <div className="nav-actions">
+          <button 
+            className={`btn-server-status status-${serverStatus}`} 
+            onClick={() => setActiveModal('server')}
+            title="Configure FastAPI Backend URL for network group mates"
+          >
+            <span className="status-dot"></span>
+            {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'checking' ? 'Connecting...' : 'Backend Offline'}
+          </button>
           <button className="btn-lang-select" onClick={() => setActiveModal('extension')}>🧩 Extension</button>
           <button className="btn-get-started" onClick={triggerFileInput}>Get Started</button>
         </div>
@@ -405,6 +452,56 @@ function App() {
                 >
                   📥 Download Extension ZIP
                 </a>
+              </div>
+            )}
+
+            {activeModal === 'server' && (
+              <div>
+                <h2>⚙️ Backend Server Connection Settings</h2>
+                <p>Ensure your Python FastAPI backend is running and reachable by all group mates.</p>
+
+                <div style={{ background: '#0b0f19', padding: '16px', borderRadius: '12px', margin: '14px 0', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 'bold' }}>
+                    FastAPI Backend URL:
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      defaultValue={backendUrl}
+                      id="input-backend-url"
+                      placeholder="http://localhost:8000 or http://192.168.x.x:8000"
+                      style={{
+                        flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: '#fff',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        outline: 'none'
+                      }}
+                    />
+                    <button 
+                      className="btn-generate-cyan"
+                      style={{ borderRadius: '8px', padding: '10px 16px' }}
+                      onClick={() => {
+                        const val = document.getElementById('input-backend-url').value;
+                        if (val) updateBackendUrl(val);
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                  <div style={{ marginTop: '10px', fontSize: '0.8rem', color: serverStatus === 'online' ? '#4ade80' : '#f87171' }}>
+                    Status: <strong>{serverStatus === 'online' ? '🟢 Connected & Ready' : '🔴 Cannot Reach Backend'}</strong>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                  💡 <strong>Tip for Group Mates:</strong><br />
+                  - If testing on the <strong>same Wi-Fi network</strong>, use your host PC's IP address (e.g. <code>http://192.168.X.X:8000</code>).<br />
+                  - If testing <strong>online / remotely</strong>, deploy the backend to Render / Railway and paste the cloud URL above!
+                </div>
               </div>
             )}
           </div>

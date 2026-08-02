@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ai-detector-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt && python -m spacy download en_core_web_sm"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: SIGHTENGINE_API_USER
+        value: 1811515332
+      - key: SIGHTENGINE_API_SECRET
+        value: AwUYNKsoCnCCatdAkz6SCndRtyJL35Y4

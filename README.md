@@ -4,12 +4,36 @@ MindSpark is an end-to-end Trust & Safety solution designed for **AI Deepfake Fo
 
 ---
 
-## 🚀 Features
+## 🌐 Deploying 100% Online (For Group Mates & Remote Access)
 
-- **📸 AI Image Forensic Scan**: Uses Sightengine AI models to detect synthetic pixels and AI generation artifacts.
-- **🕵️ Web Origin Tracking**: Reverse search images on Google Lens, TinEye, and Bing Visual Search.
-- **🔒 Local PII Masking**: Microsoft Presidio scrubs names, phone numbers, locations, and personal identifiers locally before sending messages to cloud LLMs.
-- **🧩 Chrome Extension**: Right-click any image on Facebook, news sites, or social media to run instant forensic scans.
+To make your system accessible to group mates anywhere in the world over the internet:
+
+### Option A: Free Cloud Deployment (Recommended)
+
+1. **Deploy Backend (Render.com)**:
+   - Go to [Render.com](https://render.com) and create a free account.
+   - Click **New +** -> **Web Service** and connect your GitHub repository (`Juner1c/AI_Assistant`).
+   - Set **Root Directory** to `backend`.
+   - Set **Build Command**: `pip install -r requirements.txt && python -m spacy download en_core_web_sm`
+   - Set **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - Click **Create Web Service**. You will get a free HTTPS backend URL (e.g., `https://ai-detector-backend.onrender.com`).
+
+2. **Connect Frontend (Netlify / Vercel)**:
+   - In Netlify, add Environment Variable `VITE_API_BASE_URL` set to your Render backend URL (e.g. `https://ai-detector-backend.onrender.com`).
+   - Or open your live Netlify website, click **`🔴 Backend Offline`** in the top right navbar, and paste your Render HTTPS backend URL!
+
+---
+
+### Option B: Instant Online Public Tunnel (Zero Setup Needed)
+
+If you are running the backend on your laptop right now and want group mates to connect immediately over the internet:
+
+1. In your terminal, run:
+   ```bash
+   npx localtunnel --port 8000
+   ```
+2. Localtunnel will give you a public URL (e.g. `https://lazy-fox-99.loca.lt`).
+3. Share that URL with your group mates or paste it into the **`⚙️ Backend Settings`** modal in the web app navbar!
 
 ---
 
@@ -21,16 +45,6 @@ MindSpark is an end-to-end Trust & Safety solution designed for **AI Deepfake Fo
 4. **Developer Mode**: Toggle **Developer mode** **ON** in the top-right corner.
 5. **Load Extension**: Click **Load unpacked** (top-left) and select the `extension` folder inside the unzipped directory.
 6. **Scan Images**: Right-click any image on the web and select **"🔍 Scan this Image with AI Detector"**.
-
----
-
-## 🛠️ Project Structure
-
-```text
-├── frontend/     # React + Vite web app (Deployable to Netlify)
-├── backend/      # Python FastAPI server with Presidio PII scrubbing (Deployable to Render)
-└── extension/    # Chrome Extension (Manifest V3)
-```
 
 ---
 
