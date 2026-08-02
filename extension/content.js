@@ -200,7 +200,6 @@ function performScan(imageUrl, modalRoot) {
       const webCtx = data.web_context || {};
       const googleUrl = webCtx.google_lens_url || `https://www.google.com/searchbyimage?image_url=${encodeURIComponent(imageUrl)}`;
       const tineyeUrl = webCtx.tineye_url || `https://tineye.com/search?url=${encodeURIComponent(imageUrl)}`;
-      const bingUrl = webCtx.bing_visual_url || `https://www.bing.com/images/searchbyimage?cbir=sbi&imgurl=${encodeURIComponent(imageUrl)}`;
 
       verdictContainer.innerHTML = `
         <div class="ai-detector-badge ${isFake ? 'badge-fake' : 'badge-real'}">

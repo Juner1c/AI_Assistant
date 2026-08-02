@@ -192,12 +192,11 @@ function App() {
     }
   };
 
-  // Open Google, TinEye, or Bing direct reverse search URL in a new tab
+  // Open Google or TinEye direct reverse search URL in a new tab
   const handleReverseSearch = (engine) => {
     if (scanResult && scanResult.web_context) {
       let targetUrl = scanResult.web_context.google_lens_url;
       if (engine === 'tineye') targetUrl = scanResult.web_context.tineye_url;
-      if (engine === 'bing') targetUrl = scanResult.web_context.bing_visual_url;
       window.open(targetUrl, '_blank');
     }
   };
@@ -343,7 +342,6 @@ function App() {
                     <div className="reverse-buttons">
                       <button onClick={() => handleReverseSearch('google')} className="btn-rev-google">🔎 Google Full Image</button>
                       <button onClick={() => handleReverseSearch('tineye')} className="btn-rev-tineye">🕵️ TinEye Full Photo</button>
-                      <button onClick={() => handleReverseSearch('bing')} className="btn-rev-bing">🌐 Bing Visual</button>
                     </div>
                   </div>
                 )}
@@ -420,7 +418,7 @@ function App() {
                 <h2>⚡ Key Platform Features</h2>
                 <ul>
                   <li><strong>📸 AI Forensic Scan:</strong> Uses Sightengine AI models to detect synthetic and deepfake images.</li>
-                  <li><strong>🕵️ Whole-Image Reverse Search:</strong> Instant verification with Google Lens, TinEye, and Bing Visual.</li>
+                  <li><strong>🕵️ Whole-Image Reverse Search:</strong> Instant verification with Google Lens and TinEye.</li>
                   <li><strong>🔒 Local PII Masking:</strong> Scrubs sensitive personal info (emails, phone numbers, SSNs) locally before cloud AI processing.</li>
                 </ul>
               </div>

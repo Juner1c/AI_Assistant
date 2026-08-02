@@ -104,7 +104,7 @@ def call_sightengine_api(file_bytes: bytes, filename: str, content_type: str) ->
         return {"status": "failure", "error": {"message": str(e)}}
 
 def generate_reverse_search_context(image_url: Optional[str] = None) -> dict:
-    """ Generate direct reverse image search engine links (Google Lens, TinEye, Bing) for full-image exact matching """
+    """ Generate direct reverse image search engine links (Google Lens, TinEye) for full-image exact matching """
     encoded_url = urllib.parse.quote(image_url, safe='') if image_url else ""
     
     return {
@@ -112,7 +112,6 @@ def generate_reverse_search_context(image_url: Optional[str] = None) -> dict:
         "public_image_url": image_url,
         "google_lens_url": f"https://lens.google.com/uploadbyurl?url={encoded_url}" if image_url else "https://lens.google.com/",
         "tineye_url": f"https://tineye.com/search?url={encoded_url}" if image_url else "https://tineye.com/search",
-        "bing_visual_url": f"https://www.bing.com/images/searchbyimage?cbir=sbi&imgurl={encoded_url}" if image_url else "https://www.bing.com/visualsearch",
         "privacy_shield": "Zero-Retention Architecture (RA 10173): Image processed strictly in transit and auto-deleted from memory.",
         "cheap_fake_warning": "Warning: Misinformation often uses real photographs recycled out of context ('cheap-fakes'). Check publication dates via reverse search."
     }
@@ -335,7 +334,7 @@ async def chat_with_ai(
         else:
             ai_reply = (
                 f"🛡️ **Trust & Safety Analysis**: The forensic scan indicates this is a **real photograph** (0% AI synthetic confidence).\n\n"
-                f"However, to verify if this image is legitimate or being recycled out of context ('cheap fake'), click the **Whole-Image Reverse Search** buttons above (Google Lens, TinEye, Bing Visual).\n\n"
+                f"However, to verify if this image is legitimate or being recycled out of context ('cheap fake'), click the **Whole-Image Reverse Search** buttons above (Google Lens, TinEye).\n\n"
                 f"💡 *Safety Tip*: Online scammers frequently steal real photos of innocent people and reuse them with fake headlines or investment scams. Always verify where the photo originally appeared."
             )
     
