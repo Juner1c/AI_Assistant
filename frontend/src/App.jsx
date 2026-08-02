@@ -83,7 +83,15 @@ function App() {
       showToast("✅ Image scan complete!");
     } catch (err) {
       console.error(err);
-      alert('Error connecting to backend scan API.');
+      showToast("⚠️ Could not connect to backend server. Please verify backend URL.");
+      setScanResult({
+        is_ai_generated: false,
+        ai_probability: 0,
+        summary: "⚠️ Backend API Offline: Unable to reach the Python FastAPI analysis server. If testing online, please deploy the backend to Render/Railway and set VITE_API_BASE_URL.",
+        model_used: "Offline / Disconnected",
+        flags: ["Backend server connection error"],
+        web_context: null
+      });
     } finally {
       setLoadingScan(false);
     }
