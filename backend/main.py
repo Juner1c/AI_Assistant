@@ -144,6 +144,15 @@ def parse_sightengine_response(data: dict, image_url: Optional[str] = None) -> d
         "web_context": web_ctx
     }
 
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "service": "MindSpark AI Detector & Safety Assistant Backend API",
+        "health_check": "/api/health",
+        "dpa_compliance": "Data Privacy Act (RA 10173 Active)"
+    }
+
 @app.get("/api/health")
 async def health_check():
     """ Health check for Chrome extension and web clients """
