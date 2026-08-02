@@ -37,24 +37,38 @@ function App() {
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
 
-  // Check backend server connection on startup or URL change
+  // Check backend server connection on startup or URL change (with auto-retry for Render cold starts)
   useEffect(() => {
-    checkServerHealth(backendUrl);
-  }, [backendUrl]);
+    let timer;
+    let active = true;
 
-  const checkServerHealth = async (url) => {
-    setServerStatus('checking');
-    try {
-      const res = await axios.get(`${url}/api/health`, { timeout: 3000 });
-      if (res.data && res.data.status === 'ok') {
-        setServerStatus('online');
-      } else {
-        setServerStatus('offline');
+    const ping = async () => {
+      if (!active) return;
+      setServerStatus((prev) => (prev === 'online' ? 'online' : 'checking'));
+      try {
+        const res = await axios.get(`${backendUrl}/api/health`, { timeout: 15000 });
+        if (active && res.data && res.data.status === 'ok') {
+          setServerStatus('online');
+        } else if (active) {
+          setServerStatus('offline');
+          timer = setTimeout(ping, 6000);
+        }
+      } catch (err) {
+        if (active) {
+          setServerStatus('offline');
+          // Auto retry every 6 seconds to wake up Render free container from sleep
+          timer = setTimeout(ping, 6000);
+        }
       }
-    } catch (err) {
-      setServerStatus('offline');
-    }
-  };
+    };
+
+    ping();
+
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [backendUrl]);
 
   const updateBackendUrl = (newUrl) => {
     const formatted = newUrl.trim().replace(/\/+$/, '');
@@ -222,7 +236,7 @@ function App() {
             title="Configure FastAPI Backend URL for network group mates"
           >
             <span className="status-dot"></span>
-            {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'checking' ? 'Connecting...' : 'Backend Offline'}
+            {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'checking' ? 'Waking Backend...' : 'Connecting...'}
           </button>
           <button className="btn-lang-select" onClick={() => setActiveModal('extension')} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}>🧩 Add to Chrome</button>
           <button className="btn-get-started" onClick={triggerFileInput}>Get Started</button>
