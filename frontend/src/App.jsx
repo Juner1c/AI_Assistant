@@ -12,7 +12,13 @@ const getDefaultBackendUrl = () => {
 
 function App() {
   const [backendUrl, setBackendUrl] = useState(() => {
-    return localStorage.getItem('mindspark_backend_url') || getDefaultBackendUrl();
+    const saved = localStorage.getItem('mindspark_backend_url');
+    // If viewing over HTTPS (e.g. Netlify) and saved URL is un-encrypted http:, force default Render HTTPS URL
+    if (window.location.protocol === 'https:' && saved && saved.startsWith('http:')) {
+      localStorage.setItem('mindspark_backend_url', getDefaultBackendUrl());
+      return getDefaultBackendUrl();
+    }
+    return saved || getDefaultBackendUrl();
   });
   const [serverStatus, setServerStatus] = useState('checking'); // 'online', 'offline', 'checking'
 
@@ -117,7 +123,7 @@ function App() {
     formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/scan-image`, formData);
+      const response = await axios.post(`${backendUrl}/api/scan-image`, formData);
       setScanResult(response.data);
       showToast("✅ Image scan complete!");
     } catch (err) {
@@ -125,8 +131,8 @@ function App() {
       showToast("⚠️ Could not connect to backend server. Please verify backend URL.");
       setScanResult({
         is_ai_generated: false,
-        ai_probability: 0,
-        summary: "⚠️ Backend API Offline: Unable to reach the Python FastAPI analysis server. If testing online, please deploy the backend to Render/Railway and set VITE_API_BASE_URL.",
+        confidence: 0,
+        summary: "⚠️ Backend API Offline: Unable to reach the Python FastAPI analysis server.",
         model_used: "Offline / Disconnected",
         flags: ["Backend server connection error"],
         web_context: null
@@ -153,7 +159,7 @@ function App() {
     formData.append('is_fake', isFake);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/chat`, formData, {
+      const response = await axios.post(`${backendUrl}/api/chat`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
