@@ -1,0 +1,381 @@
+import React, { useState, useRef } from 'react';
+import axios from 'axios';
+import './App.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+function App() {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [scanResult, setScanResult] = useState(null);
+  const [loadingScan, setLoadingScan] = useState(false);
+
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'about', 'features', 'how-it-works', 'blog', or null
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const fileInputRef = useRef(null);
+  const chatInputRef = useRef(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Handle image selection
+  const handleImageChange = (e) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setScanResult(null);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setScanResult(null);
+    }
+  };
+
+  // Trigger file selection dialog programmatically
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Focus chat input
+  const focusChatInput = () => {
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  };
+
+  // Scan image via FastAPI backend
+  const handleScan = async () => {
+    if (!selectedFile) return;
+    setLoadingScan(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/scan-image`, formData);
+      setScanResult(response.data);
+      showToast("✅ Image scan complete!");
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to backend scan API.');
+    } finally {
+      setLoadingScan(false);
+    }
+  };
+
+  // Send message to FastAPI privacy chat backend
+  const handleSendMessage = async (e) => {
+    if (e) e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    const userMsg = inputMessage;
+    setInputMessage('');
+    setMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
+
+    setLoadingChat(true);
+    const isFake = scanResult ? scanResult.is_ai_generated : false;
+
+    const formData = new URLSearchParams();
+    formData.append('user_message', userMsg);
+    formData.append('is_fake', isFake);
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/chat`, formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const aiReply = response.data.ai_response;
+      const scrubbed = response.data.scrubbed_message_sent_to_cloud;
+
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: aiReply, scrubbed: scrubbed }
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [...prev, { sender: 'ai', text: 'System error connecting to AI.' }]);
+    } finally {
+      setLoadingChat(false);
+    }
+  };
+
+  // Open Google, TinEye, or Bing direct reverse search URL in a new tab
+  const handleReverseSearch = (engine) => {
+    if (scanResult && scanResult.web_context) {
+      let targetUrl = scanResult.web_context.google_lens_url;
+      if (engine === 'tineye') targetUrl = scanResult.web_context.tineye_url;
+      if (engine === 'bing') targetUrl = scanResult.web_context.bing_visual_url;
+      window.open(targetUrl, '_blank');
+    }
+  };
+
+  return (
+    <div className="mindspark-page">
+      {/* Toast Notification Popup */}
+      {toastMessage && (
+        <div className="app-toast-popup">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Top Navbar */}
+      <nav className="navbar">
+        <div className="nav-brand" onClick={() => setActiveModal('about')} style={{ cursor: 'pointer' }}>
+          <div className="brand-logo-icon">✦</div>
+          <div className="brand-text">
+            <span className="brand-name">MindSpark</span>
+            <span className="brand-sub">AI DETECTOR & SAFETY</span>
+          </div>
+        </div>
+
+        <ul className="nav-links">
+          <li><button onClick={() => setActiveModal('about')} className="nav-btn-link">About</button></li>
+          <li><button onClick={() => setActiveModal('features')} className="nav-btn-link">Features</button></li>
+          <li><button onClick={() => setActiveModal('how-it-works')} className="nav-btn-link">How It Works</button></li>
+          <li><button onClick={() => setActiveModal('blog')} className="nav-btn-link">Blog <span className="badge-count">23</span></button></li>
+        </ul>
+
+        <div className="nav-actions">
+          <button className="btn-lang-select" onClick={() => showToast("🌐 Language set to English")}>🌐 Eng <span>v</span></button>
+          <button className="btn-get-started" onClick={triggerFileInput}>Get Started</button>
+        </div>
+      </nav>
+
+      {/* Hidden File Input */}
+      <input 
+        ref={fileInputRef} 
+        id="file-upload-hidden" 
+        type="file" 
+        accept="image/*" 
+        onChange={handleImageChange} 
+        style={{ display: 'none' }} 
+      />
+
+      {/* Main Content / Hero Section */}
+      <main className="hero-section">
+        <div className="smarter-badge" onClick={focusChatInput} style={{ cursor: 'pointer' }}>
+          <span>✨ Smarter chats, instant solutions</span>
+        </div>
+
+        <h1 className="hero-title">
+          Chat Smarter, Not Harder – <br />
+          <span className="hero-title-accent">Meet MindSpark<span className="blinking-cursor">|</span></span>
+        </h1>
+
+        <p className="hero-subtitle">
+          Your Ultimate AI Chat Partner – Instant Answers, Endless Knowledge!
+        </p>
+
+        {/* Central Interactive Grid Layout */}
+        <div className="mindspark-card-wrapper">
+          {/* Left Side Feature Pills */}
+          <div className="side-pills left-pills">
+            <div 
+              className="pill-item clickable-pill" 
+              onClick={() => showToast("⚡ Sightengine Forensic API provides sub-second deepfake detection speed.")}
+              title="Click to view performance info"
+            >
+              ⚡ Speed Performance <span className="pill-dot"></span>
+            </div>
+            <div 
+              className="pill-item clickable-pill" 
+              onClick={() => showToast("👁️ Privacy Safeguard: All PII is masked locally before cloud processing.")}
+              title="Click to view privacy info"
+            >
+              👁️ User Confidentiality <span className="pill-dot"></span>
+            </div>
+          </div>
+
+          {/* Main Central Container Box */}
+          <div 
+            className={`mindspark-main-card ${isDragging ? 'drag-active' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="card-top-tag">
+              ✦ Write any request or command to MindSpark
+            </div>
+
+            {/* Uploaded File Banner / Selected Image Bar */}
+            {selectedFile ? (
+              <div className="file-preview-card">
+                <div className="file-preview-left">
+                  {previewUrl && <img src={previewUrl} alt="Upload preview" className="file-thumb" />}
+                  <div className="file-meta">
+                    <span className="file-name">{selectedFile.name}</span>
+                    <span className="file-status">
+                      {scanResult ? '✅ Scan Completed' : 'Ready for Sightengine Forensic Scan'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Show 'Scan Image' button ONLY IF the image has NOT yet been scanned */}
+                {!scanResult && (
+                  <button onClick={handleScan} disabled={loadingScan} className="btn-scan-pill">
+                    {loadingScan ? 'Scanning...' : 'Scan Image'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="empty-drop-hint" onClick={triggerFileInput}>
+                📁 Drag & drop an image here or click <strong>Upload Image</strong> below
+              </div>
+            )}
+
+            {/* Notification / Scan Result Container */}
+            {scanResult && (
+              <div className={`scan-notification-banner ${scanResult.is_ai_generated ? 'result-fake' : 'result-real'}`}>
+                <div className="notification-header">
+                  <span className="notification-icon">{scanResult.is_ai_generated ? '⚠️' : '✅'}</span>
+                  <div>
+                    <strong>AI Detection Status:</strong> {scanResult.is_ai_generated ? 'Synthetic / AI Generated' : 'Real Photograph'} 
+                    <span className="confidence-tag">({(scanResult.confidence * 100).toFixed(0)}% Confidence)</span>
+                  </div>
+                </div>
+
+                {/* Reverse Search Engine Quick Links */}
+                {scanResult.web_context && (
+                  <div className="reverse-search-bar">
+                    <span className="reverse-label">🌐 Whole-Image Reverse Search:</span>
+                    <div className="reverse-buttons">
+                      <button onClick={() => handleReverseSearch('google')} className="btn-rev-google">🔎 Google Full Image</button>
+                      <button onClick={() => handleReverseSearch('tineye')} className="btn-rev-tineye">🕵️ TinEye Full Photo</button>
+                      <button onClick={() => handleReverseSearch('bing')} className="btn-rev-bing">🌐 Bing Visual</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Chat Conversation Area */}
+            <div className="chat-content-area">
+              {messages.length === 0 ? (
+                <div className="welcome-chat-bubble">
+                  Hello! I am your MindSpark Trust & Safety Assistant. Ask me anything or upload an image to analyze for deepfakes.
+                </div>
+              ) : (
+                <div className="messages-scroll-window">
+                  {messages.map((msg, index) => (
+                    <div key={index} className={`chat-message ${msg.sender}`}>
+                      <span className="msg-avatar">{msg.sender === 'user' ? '👤' : '🤖'}</span>
+                      <div className="msg-body">
+                        <div className="msg-text">{msg.text}</div>
+                        {msg.scrubbed && (
+                          <div className="msg-scrubbed">
+                            🔒 Scrubbed PII sent to cloud: {msg.scrubbed}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {loadingChat && <div className="typing-indicator">MindSpark AI is processing request...</div>}
+                </div>
+              )}
+            </div>
+
+            {/* Integrated Control Input Bar at Bottom */}
+            <form onSubmit={handleSendMessage} className="bottom-input-bar">
+              <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">+</button>
+
+              <button type="button" onClick={triggerFileInput} className="btn-bar-pill pill-upload">
+                🖼️ Upload Image
+              </button>
+
+              <input 
+                ref={chatInputRef}
+                type="text" 
+                value={inputMessage} 
+                onChange={(e) => setInputMessage(e.target.value)} 
+                placeholder="Ask about a scam or type your situation..." 
+                className="main-chat-input"
+              />
+
+              <button type="submit" disabled={loadingChat} className="btn-generate-cyan">
+                Ask
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+
+      {/* Interactive Feature Modals */}
+      {activeModal && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setActiveModal(null)}>✕</button>
+            
+            {activeModal === 'about' && (
+              <div>
+                <h2>🛡️ About MindSpark AI Assistant</h2>
+                <p>MindSpark is a comprehensive Trust & Safety solution designed for deepfake detection, reverse image tracking, and local PII privacy masking.</p>
+                <p>Our mission is to help users identify synthetic media and protect personal confidentiality on the web.</p>
+              </div>
+            )}
+
+            {activeModal === 'features' && (
+              <div>
+                <h2>⚡ Key Platform Features</h2>
+                <ul>
+                  <li><strong>📸 AI Forensic Scan:</strong> Uses Sightengine AI models to detect synthetic and deepfake images.</li>
+                  <li><strong>🕵️ Whole-Image Reverse Search:</strong> Instant verification with Google Lens, TinEye, and Bing Visual.</li>
+                  <li><strong>🔒 Local PII Masking:</strong> Scrubs sensitive personal info (emails, phone numbers, SSNs) locally before cloud AI processing.</li>
+                </ul>
+              </div>
+            )}
+
+            {activeModal === 'how-it-works' && (
+              <div>
+                <h2>⚙️ How It Works</h2>
+                <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <li>Upload or drag & drop an image file into the MindSpark scanner.</li>
+                  <li>Click <strong>Scan Image</strong> to perform an instant forensic analysis.</li>
+                  <li>Review AI confidence scores and click reverse search links to check web origins.</li>
+                  <li>Chat with the Trust & Safety AI assistant safely with masked privacy safeguards!</li>
+                </ol>
+              </div>
+            )}
+
+            {activeModal === 'blog' && (
+              <div>
+                <h2>📰 Blog & Research Articles (23 Updates)</h2>
+                <p>Explore our latest publications on AI Deepfake Trends, Misinformation Tracking, and Privacy Preserving Machine Learning.</p>
+                <button className="btn-generate-cyan" style={{ marginTop: '14px' }} onClick={() => { setActiveModal(null); showToast("📚 Blog post list loaded!"); }}>
+                  View All 23 Articles
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
