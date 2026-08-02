@@ -1,15 +1,15 @@
 // Service Worker for AI Detector Chrome Extension
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "https://ai-assistant-b02f.onrender.com";
 
-// Register context menu on installation
+// Register context menu on installation (ONLY on image context)
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "scan_image_context_menu",
-    title: "🔍 Scan this Image with AI Detector",
-    contexts: ["image", "all"]
+    title: "🔍 Scan this Image with MAI Assistant",
+    contexts: ["image"]
   });
-  console.log("[AI Detector] Context menu registered successfully.");
+  console.log("[MAI Assistant] Context menu registered for image elements.");
 });
 
 // Handle Context Menu click

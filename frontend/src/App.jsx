@@ -202,7 +202,7 @@ function App() {
         <div className="nav-brand" onClick={() => setActiveModal('about')} style={{ cursor: 'pointer' }}>
           <div className="brand-logo-icon">✦</div>
           <div className="brand-text">
-            <span className="brand-name">MindSpark</span>
+            <span className="brand-name">mai-assistant</span>
             <span className="brand-sub">AI DETECTOR & SAFETY</span>
           </div>
         </div>
@@ -247,7 +247,7 @@ function App() {
 
         <h1 className="hero-title">
           Chat Smarter, Not Harder – <br />
-          <span className="hero-title-accent">Meet MindSpark<span className="blinking-cursor">|</span></span>
+          <span className="hero-title-accent">Meet mai-assistant<span className="blinking-cursor">|</span></span>
         </h1>
 
         <p className="hero-subtitle">
@@ -282,7 +282,7 @@ function App() {
             onDrop={handleDrop}
           >
             <div className="card-top-tag">
-              ✦ Write any request or command to MindSpark
+              ✦ Write any request or command to mai-assistant
             </div>
 
             {/* Uploaded File Banner / Selected Image Bar */}
@@ -340,7 +340,7 @@ function App() {
             <div className="chat-content-area">
               {messages.length === 0 ? (
                 <div className="welcome-chat-bubble">
-                  Hello! I am your MindSpark Trust & Safety Assistant. Ask me anything or upload an image to analyze for deepfakes.
+                  Hello! I am your mai-assistant Trust & Safety Assistant. Ask me anything or upload an image to analyze for deepfakes.
                 </div>
               ) : (
                 <div className="messages-scroll-window">
@@ -357,7 +357,7 @@ function App() {
                       </div>
                     </div>
                   ))}
-                  {loadingChat && <div className="typing-indicator">MindSpark AI is processing request...</div>}
+                  {loadingChat && <div className="typing-indicator">mai-assistant AI is processing request...</div>}
                 </div>
               )}
             </div>
@@ -395,8 +395,8 @@ function App() {
             
             {activeModal === 'about' && (
               <div>
-                <h2>🛡️ About MindSpark AI Assistant</h2>
-                <p>MindSpark is a comprehensive Trust & Safety solution designed for deepfake detection, reverse image tracking, and local PII privacy masking.</p>
+                <h2>🛡️ About mai-assistant AI Assistant</h2>
+                <p>mai-assistant is a comprehensive Trust & Safety solution designed for deepfake detection, reverse image tracking, and local PII privacy masking.</p>
                 <p>Our mission is to help users identify synthetic media and protect personal confidentiality on the web.</p>
               </div>
             )}
