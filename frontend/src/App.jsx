@@ -244,7 +244,6 @@ function App() {
           <div className="brand-logo-icon">✦</div>
           <div className="brand-text">
             <span className="brand-name">mai-assistant</span>
-            <span className="brand-sub">AI DETECTOR & SAFETY</span>
           </div>
         </div>
 
