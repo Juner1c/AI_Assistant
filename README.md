@@ -14,7 +14,7 @@ To make your system accessible to group mates anywhere in the world over the int
    - Go to [Render.com](https://render.com) and create a free account.
    - Click **New +** -> **Web Service** and connect your GitHub repository (`Juner1c/AI_Assistant`).
    - Set **Root Directory** to `backend`.
-   - Set **Build Command**: `pip install -r requirements.txt && python -m spacy download en_core_web_sm`
+   - Set **Build Command**: `pip install -r requirements.txt`
    - Set **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - Click **Create Web Service**. You will get a free HTTPS backend URL (e.g., `https://ai-detector-backend.onrender.com`).
 
