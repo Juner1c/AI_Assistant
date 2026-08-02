@@ -211,7 +211,7 @@ function App() {
           <li><button onClick={() => setActiveModal('about')} className="nav-btn-link">About</button></li>
           <li><button onClick={() => setActiveModal('features')} className="nav-btn-link">Features</button></li>
           <li><button onClick={() => setActiveModal('how-it-works')} className="nav-btn-link">How It Works</button></li>
-          <li><button onClick={() => setActiveModal('extension')} className="nav-btn-link" style={{ color: '#38bdf8', fontWeight: '700' }}>🧩 Extension</button></li>
+          <li><button onClick={() => setActiveModal('extension')} className="nav-btn-link" style={{ color: '#38bdf8', fontWeight: '700' }}>🧩 Add to Chrome</button></li>
           <li><button onClick={() => setActiveModal('blog')} className="nav-btn-link">Blog <span className="badge-count">23</span></button></li>
         </ul>
 
@@ -224,7 +224,7 @@ function App() {
             <span className="status-dot"></span>
             {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'checking' ? 'Connecting...' : 'Backend Offline'}
           </button>
-          <button className="btn-lang-select" onClick={() => setActiveModal('extension')}>🧩 Extension</button>
+          <button className="btn-lang-select" onClick={() => setActiveModal('extension')} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}>🧩 Add to Chrome</button>
           <button className="btn-get-started" onClick={triggerFileInput}>Get Started</button>
         </div>
       </nav>
@@ -436,28 +436,37 @@ function App() {
 
             {activeModal === 'extension' && (
               <div>
-                <h2>🧩 Install Chrome Extension</h2>
+                <h2>🧩 Add to Chrome Extension</h2>
                 <p>Scan any image on Facebook, news sites, or social media by right-clicking!</p>
                 
-                <div style={{ background: '#0b0f19', padding: '16px', borderRadius: '10px', margin: '14px 0', border: '1px solid rgba(56, 189, 248, 0.3)', textAlign: 'left' }}>
-                  <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.92rem', color: '#cbd5e1' }}>
-                    <li>Download the extension ZIP file: <a href="https://github.com/Juner1c/AI_Assistant/archive/refs/heads/main.zip" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', fontWeight: 'bold' }}>Download ZIP</a></li>
-                    <li>Extract (unzip) the file on your computer.</li>
-                    <li>Open Chrome and navigate to <code>chrome://extensions</code>.</li>
-                    <li>Turn ON <strong>Developer mode</strong> (top-right toggle).</li>
-                    <li>Click <strong>Load unpacked</strong> and choose the <code>extension</code> folder.</li>
+                <div style={{ background: '#0b0f19', padding: '16px', borderRadius: '12px', margin: '14px 0', border: '1px solid rgba(56, 189, 248, 0.3)', textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', marginBottom: '8px' }}>
+                    🛡️ Google Chrome Extension Installation:
+                  </div>
+                  <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                    <li>Click <strong>Add to Chrome</strong> below to download the extension files.</li>
+                    <li>Unzip the downloaded folder on your computer.</li>
+                    <li>Go to <code>chrome://extensions</code> in your Chrome browser address bar.</li>
+                    <li>Toggle <strong>Developer mode</strong> ON (top right corner).</li>
+                    <li>Click <strong>Load unpacked</strong> and select the <code>extension</code> folder.</li>
                   </ol>
                 </div>
 
-                <a 
-                  href="https://github.com/Juner1c/AI_Assistant/archive/refs/heads/main.zip" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn-generate-cyan"
-                  style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: '6px' }}
-                >
-                  📥 Download Extension ZIP
-                </a>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <a 
+                    href="https://github.com/Juner1c/AI_Assistant/archive/refs/heads/main.zip" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn-generate-cyan"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', textAlign: 'center' }}
+                  >
+                    📥 Add to Chrome (Download Extension)
+                  </a>
+                </div>
+
+                <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '12px' }}>
+                  🔒 <em>Note for Capstone Panelists: Google Chrome security requires non-store developer extensions to be enabled via Developer Mode. Once published on the Chrome Web Store, this button performs a 1-click automatic installation.</em>
+                </p>
               </div>
             )}
 
