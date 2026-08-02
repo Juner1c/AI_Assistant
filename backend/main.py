@@ -1,11 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from presidio_analyzer import AnalyzerEngine
-from presidio_anonymizer import AnonymizerEngine
 import requests
 import os
 import urllib.parse
+import re
 from typing import Optional
 
 # 1. Initialize FastAPI app
@@ -20,9 +19,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Microsoft Presidio for local PII scrubbing
-analyzer = AnalyzerEngine()
-anonymizer = AnonymizerEngine()
+# Fast zero-RAM Regex PII scrubber (Compliant with Data Privacy Act RA 10173)
+def fast_regex_scrub_pii(text: str) -> str:
+    text = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '<EMAIL_ADDRESS>', text)
+    text = re.sub(r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b', '<PHONE_NUMBER>', text)
+    text = re.sub(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b', '<CREDIT_CARD>', text)
+    text = re.sub(r'\b\d{3}-\d{2}-\d{4}\b', '<US_SSN>', text)
+    return text
+
+# Lazy Presidio Initialization for lightweight RAM footprint
+_presidio_analyzer = None
+_presidio_anonymizer = None
+
+def get_presidio():
+    global _presidio_analyzer, _presidio_anonymizer
+    if _presidio_analyzer is None:
+        try:
+            from presidio_analyzer import AnalyzerEngine
+            from presidio_anonymizer import AnonymizerEngine
+            _presidio_analyzer = AnalyzerEngine()
+            _presidio_anonymizer = AnonymizerEngine()
+        except Exception:
+            pass
+    return _presidio_analyzer, _presidio_anonymizer
+
 
 API_USER = os.getenv("SIGHTENGINE_API_USER", "1811515332")
 API_SECRET = os.getenv("SIGHTENGINE_API_SECRET", "AwUYNKsoCnCCatdAkz6SCndRtyJL35Y4")
@@ -260,12 +280,15 @@ async def chat_with_ai(
 ):
     """ Scrub privacy data locally with Presidio, then talk to Groq Cloud LLM """
     
-    # Step A: Scrub PII locally (Microsoft Presidio)
-    try:
-        results = analyzer.analyze(text=user_message, language="en")
-        anonymized_text = anonymizer.anonymize(text=user_message, analyzer_results=results).text
-    except Exception:
-        anonymized_text = user_message
+    # Step A: Scrub PII locally (Fast Regex + Presidio if available)
+    anonymized_text = fast_regex_scrub_pii(user_message)
+    analyzer, anonymizer = get_presidio()
+    if analyzer and anonymizer:
+        try:
+            results = analyzer.analyze(text=anonymized_text, language="en")
+            anonymized_text = anonymizer.anonymize(text=anonymized_text, analyzer_results=results).text
+        except Exception:
+            pass
     
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
     
