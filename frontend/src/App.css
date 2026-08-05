@@ -21,10 +21,26 @@
 
 html, body {
   height: 100vh;
-  overflow: hidden; /* Fixed Viewport: No main page scrollbar */
+  overflow: hidden; /* Fixed Viewport: No outer window scrollbar */
   font-family: var(--font-mono);
   background: #F4F5F9;
   color: var(--color-dark);
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E4E4E7;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
 }
 
 /* Outer Dashboard Wrapper */
@@ -65,7 +81,7 @@ html, body {
   z-index: 1000;
 }
 
-/* LEFT SIDEBAR (Fixed Height, No Page Scroll) */
+/* LEFT SIDEBAR (Fixed Height) */
 .sidebar {
   width: 260px;
   flex-shrink: 0;
@@ -302,24 +318,26 @@ html, body {
   color: var(--color-muted);
 }
 
-/* RIGHT MAIN PANEL (Fixed Height, Viewport Locked) */
+/* RIGHT MAIN PANEL */
 .main-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
   height: 100%;
-  overflow: hidden; /* Prevent main panel from scrolling! */
+  overflow: hidden;
 }
 
-/* Top Header Bar */
+/* Top Header Bar (Fixed at top of panel) */
 .main-header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 14px 28px;
   border-bottom: 1px solid #F0F1F5;
+  background: #FFFFFF;
+  z-index: 10;
 }
 
 .header-left {
@@ -409,46 +427,43 @@ html, body {
   color: #52525B;
 }
 
-/* MAIN WORKSPACE CONTENT (Fixed height, only chat scrolls) */
+/* MAIN WORKSPACE CONTENT (SCROLLABLE LIKE CHATGPT!) */
 .workspace-content {
   flex: 1;
-  min-height: 0; /* CRITICAL for flex children scrolling */
+  overflow-y: auto; /* SCROLLABLE MAIN WORKSPACE AREA LIKE CHATGPT */
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 16px 32px 12px 32px;
+  padding: 32px 40px 40px 40px;
   width: 100%;
-  max-width: 900px;
   margin: 0 auto;
-  overflow: hidden; /* No page scroll! */
   background: radial-gradient(circle at 50% 10%, #FAF5FF 0%, #F0F5FF 40%, #FFFFFF 80%);
 }
 
 .center-logo-glow {
-  flex-shrink: 0;
-  width: 50px;
-  height: 50px;
+  width: 64px;
+  height: 64px;
   background: var(--color-dark);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   font-family: var(--font-mono);
-  box-shadow: 0 0 35px rgba(89, 150, 255, 0.35), 0 0 18px rgba(244, 206, 255, 0.5);
-  margin-bottom: 10px;
+  box-shadow: 0 0 40px rgba(89, 150, 255, 0.35), 0 0 20px rgba(244, 206, 255, 0.5);
+  margin-bottom: 16px;
 }
 
 .main-hero-title {
-  flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: clamp(18px, 3vw, 24px);
+  font-size: clamp(22px, 4vw, 28px);
   font-weight: 700;
   color: var(--color-dark);
-  line-height: 1.25;
+  line-height: 1.3;
   letter-spacing: -0.01em;
 }
 
@@ -461,40 +476,31 @@ html, body {
 }
 
 .main-hero-subtitle {
-  flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-muted);
-  margin-top: 4px;
-  margin-bottom: 14px;
+  margin-top: 8px;
+  margin-bottom: 28px;
 }
 
-/* Central Card Workspace (Fits remaining height) */
+/* Central Card Workspace */
 .central-card-wrapper {
-  flex: 1;
-  min-height: 0; /* CRITICAL: Allows card to shrink & fit viewport */
   width: 100%;
   max-width: 680px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .mindspark-main-card {
-  flex: 1;
-  min-height: 0; /* CRITICAL */
   width: 100%;
   background: #FFFFFF;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 14px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   text-align: left;
-  overflow: hidden;
 }
 
 .mindspark-main-card.drag-active {
@@ -503,52 +509,46 @@ html, body {
 }
 
 .welcome-chat-bubble {
-  flex-shrink: 0;
-  max-height: 85px;
-  overflow-y: auto;
   background: #FAFAFC;
   border: 1px solid #F0F1F5;
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: 12px 16px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-dark);
-  line-height: 1.45;
+  line-height: 1.5;
   text-align: left;
 }
 
 .card-top-tag {
-  flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
   text-align: left;
 }
 
 .empty-drop-hint {
-  flex-shrink: 0;
   background: linear-gradient(135deg, var(--color-3) 0%, var(--color-2) 100%);
-  border-radius: 10px;
+  border-radius: 12px;
   color: #FFFFFF;
-  padding: 14px;
+  padding: 16px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(56, 116, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(56, 116, 255, 0.2);
 }
 
 .file-preview-card {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   background: #FAFAFC;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: 12px 16px;
   width: 100%;
   overflow: hidden;
 }
@@ -556,16 +556,16 @@ html, body {
 .file-preview-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   flex: 1;
   overflow: hidden;
 }
 
 .file-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -581,7 +581,7 @@ html, body {
 
 .file-name {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-dark);
   white-space: nowrap;
@@ -591,7 +591,7 @@ html, body {
 
 .file-status {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
 }
 
@@ -599,22 +599,21 @@ html, body {
   background: var(--color-dark);
   color: #FFFFFF;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 14px;
+  padding: 8px 16px;
+  border-radius: 16px;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .scan-notification-banner {
-  flex-shrink: 0;
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: 12px 16px;
   text-align: left;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .scan-notification-banner.result-fake {
@@ -632,33 +631,33 @@ html, body {
 .notification-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .reverse-search-bar {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .reverse-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
 .reverse-buttons {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .reverse-buttons button {
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 9px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 10px;
   font-family: var(--font-mono);
   border: none;
   font-weight: 600;
@@ -669,42 +668,36 @@ html, body {
 .btn-rev-google { background: var(--color-2); }
 .btn-rev-tineye { background: var(--color-1); }
 
-/* CHAT CONTENT AREA & SCROLL WINDOW (THE ONLY SCROLLABLE AREA!) */
+/* CHAT MESSAGES EXPAND NATURALLY WITH WORKSPACE SCROLL */
 .chat-content-area {
-  flex: 1;
-  min-height: 0; /* CRITICAL */
+  width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .messages-scroll-window {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto; /* THIS IS THE ONLY SCROLLBAR ON THE PAGE! */
-  overflow-x: hidden;
-  padding-right: 4px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  overflow: visible;
 }
 
 .chat-message {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
   text-align: left;
 }
 
 .msg-avatar {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .msg-body {
   background: #FAFAFC;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 8px 12px;
+  border-radius: 12px;
+  padding: 10px 14px;
   max-width: 90%;
 }
 
@@ -715,8 +708,8 @@ html, body {
 
 .msg-text {
   font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--color-dark);
   white-space: pre-wrap;
   word-break: break-word;
@@ -724,53 +717,52 @@ html, body {
 
 .msg-scrubbed {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-1);
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .typing-indicator {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
 }
 
 /* Bottom Control Bar */
 .bottom-input-bar {
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   background: #FAFAFC;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 8px 12px;
+  border-radius: 16px;
+  padding: 10px 14px;
 }
 
 .input-toolbar-left {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .btn-icon-plus {
   background: transparent;
   border: none;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 6px;
 }
 
 .btn-pill-tool {
   background: #FFFFFF;
   border: 1px solid var(--color-border);
-  font-size: 9px;
+  font-size: 10px;
   font-family: var(--font-mono);
   font-weight: 500;
   color: var(--color-muted);
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -786,8 +778,8 @@ html, body {
   outline: none;
   color: var(--color-dark);
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 2px 0;
+  font-size: 12px;
+  padding: 4px 0;
 }
 
 .main-chat-input::placeholder {
@@ -800,47 +792,49 @@ html, body {
   border: none;
   color: #FFFFFF;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 5px 14px;
-  border-radius: 8px;
+  padding: 6px 18px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
 /* Bottom 4 Feature Cards Grid */
 .bottom-cards-grid {
-  flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 14px;
   width: 100%;
   max-width: 820px;
+  margin-top: 12px;
+  margin-bottom: 24px;
 }
 
 .feature-grid-card {
   background: #FFFFFF;
   border: 1px solid #F0F1F5;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 14px;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .feature-grid-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
 }
 
 .grid-card-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
 .icon-blue { background: #EFF6FF; color: #3B82F6; }
@@ -849,18 +843,18 @@ html, body {
 .icon-green { background: #F0FDF4; color: #22C55E; }
 
 .grid-card-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--color-dark);
   font-family: var(--font-mono);
 }
 
 .grid-card-sub {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--color-muted);
   margin-top: 2px;
   font-family: var(--font-mono);
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 /* Modal Styling */
@@ -932,7 +926,7 @@ html, body {
 @media (max-width: 820px) {
   html, body, .dashboard-layout-wrapper {
     height: auto;
-    overflow: auto; /* Enable page scroll on small mobile devices so content isn't cramped */
+    overflow: auto;
   }
 
   .dashboard-container {
