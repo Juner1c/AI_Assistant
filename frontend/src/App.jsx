@@ -316,7 +316,12 @@ function App() {
           >
             {/* Top Welcome / Chat Assistant Section */}
             <div className="welcome-chat-bubble">
-              Hello! I am your mai-assistant Trust & Safety Assistant. Ask me anything or Upload an Image to analyze.
+              Thank you for reaching out! As mai-assistant, I am specifically designed to focus on Trust & Safety, Deepfake Detection, and Scam Prevention.<br /><br />
+              I am here to help you:<br />
+              1. Analyze uploaded images for deepfakes and AI synthetic manipulation<br />
+              2. Evaluate suspicious messages or investment offers for scam risks<br />
+              3. Learn about digital privacy and local PII masking<br /><br />
+              Please let me know if you have a question about online safety, or upload an image or message for me to verify!
             </div>
 
             <div className="card-top-tag">

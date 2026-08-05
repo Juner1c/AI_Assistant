@@ -294,10 +294,16 @@ YOUR CORE PURPOSE & EXPERTISE:
 3. Digital Safety & Privacy Protection: You guide users on digital security best practices, data privacy laws (such as the Philippines Data Privacy Act RA 10173), and protecting Personally Identifiable Information (PII).
 4. Platform Guidance: You assist users with mai-assistant features (image scanner, Google Lens & TinEye reverse image search, Chrome extension).
 
-CONVERSATIONAL CONTEXT & FAREWELLS (CRITICAL):
+SCAM EVALUATION & IMAGE QUESTIONS (CRITICAL):
+- If a user asks "is this scammer?", "is this a scam?", "is this person real?", "should I trust this?", or asks about a suspicious situation:
+  1. Always check and evaluate the active image scan context or previous chat history if available.
+  2. If the scanned photo is a real photograph (0% AI synthetic confidence), warn the user that scammers frequently steal real photos of innocent people off social media to build fake profiles ("cheap fakes"). Advise them to use Google Lens or TinEye above to check where the photo originally appeared online before trusting the person.
+  3. If the scanned photo is AI-generated (deepfake), explain that using synthetic photos of people is a major red flag for romance scams, investment fraud, and fake profiles.
+
+CONVERSATIONAL CONTEXT & FAREWELLS:
 - Understand user intent naturally. Do NOT act confused when the user expresses gratitude or closes the conversation.
 - If the user says "thanks", "thank you", "appreciate it", or similar: Warmly reply (e.g., "You are very welcome! Stay safe online, and feel free to reach out anytime if you need help verifying an image or scam.").
-- If the user indicates they are finished or don't need any more help (e.g., "no more", "nothing more", "no thanks", "im good", "that's all", "bye", "nothing else"): Acknowledge smoothly and politely without re-prompting, questioning, or offering unnecessary lists (e.g., "Understood! Have a great day and stay safe online. I am here whenever you need assistance again.").
+- If the user indicates they are finished or don't need any more help (e.g., "no more", "nothing more", "no thanks", "im good", "that's all", "bye", "nothing else"): Acknowledge smoothly and politely without re-prompting, questioning, or offering unnecessary lists.
 
 HANDLING IMAGE SCANS:
 - When a user provides an image scan result or asks about an uploaded photo, IMMEDIATELY provide a clear, insightful, and actionable safety summary. Explain what the confidence score means, whether the photo shows deepfake indicators, and provide numbered steps for verifying it online. Jump straight into the advice without conversational filler.
@@ -395,19 +401,19 @@ async def chat_with_ai(
         # Closing / Finished
         elif any(phrase in msg_lower for phrase in ["no more", "nothing more", "no thanks", "im good", "i'm good", "that's all", "thats all", "nothing else", "no", "bye", "goodbye"]):
             ai_reply = "Understood! Have a great day and stay safe online. I am here whenever you need assistance again."
-        # Check if message is asking about image scan results or analysis
-        elif any(word in msg_lower for word in ["summarize", "analysis", "confidence", "scan", "image", "photo", "picture", "fake", "authentic", "real", "deepfake"]):
+        # Check if message is asking about image scan results, scam risk, or person
+        elif any(word in msg_lower for word in ["summarize", "analysis", "confidence", "scan", "image", "photo", "picture", "fake", "authentic", "real", "deepfake", "scam", "scammer", "fraud", "legit", "trust", "safe", "suspicious", "danger", "warning", "phishing", "invest", "who"]):
             if is_fake:
                 ai_reply = (
                     "AI Forensic Notice: The image analysis detected synthetic pixel artifacts indicating this image is AI-generated / synthetic.\n\n"
-                    "If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media. "
+                    "If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media (a major red flag for romance or investment scams). "
                     "You can verify this photo using the reverse search buttons above to see if it appears on public news sites."
                 )
             else:
                 ai_reply = (
                     "Trust & Safety Analysis: The forensic scan indicates this is a real photograph (0% AI synthetic confidence).\n\n"
-                    "However, to verify if this image is legitimate or being recycled out of context (a cheap fake), click the Whole-Image Reverse Search buttons above (Google Lens, TinEye).\n\n"
-                    "Safety Tip: Online scammers frequently steal real photos of innocent people and reuse them with fake headlines or investment scams. Always verify where the photo originally appeared."
+                    "However, if someone you do not know sent you this photo claiming to be an investor, romance partner, or official, beware of impersonation scams (cheap fakes). Online scammers frequently steal real photos of innocent people off social media to build fake profiles.\n\n"
+                    "We recommend clicking the Whole-Image Reverse Search buttons above (Google Lens, TinEye) to verify where the photo originally appeared on the web before trusting them."
                 )
         # Greetings
         elif msg_lower in ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "greetings", "hello!"]:
