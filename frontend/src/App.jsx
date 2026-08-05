@@ -461,6 +461,34 @@ function App() {
                   </div>
                 )}
 
+          </div>
+
+          {/* FIXED BOTTOM CONTROLS CONTAINER (INPUT BAR + 4 CARDS GRID OUTSIDE WORKSPACE SCROLLING) */}
+          <div className="fixed-bottom-controls-wrapper">
+            <form onSubmit={handleSendMessage} className="bottom-input-bar">
+              <input
+                ref={chatInputRef}
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Initiate a query or send a command to mai-assistant..."
+                className="main-chat-input"
+              />
+
+              <div className="input-bottom-row">
+                <div className="input-toolbar-left">
+                  <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">📎</button>
+                  <button type="button" onClick={triggerFileInput} className="btn-pill-tool">💡 Reasoning</button>
+                  <button type="button" onClick={triggerFileInput} className="btn-pill-tool">✏️ Upload Image</button>
+                  <button type="button" onClick={() => showToast("🔎 Reverse Search & Deep Research Tools ready")} className="btn-pill-tool">📊 Deep Research</button>
+                </div>
+
+                <button type="submit" disabled={loadingChat} className="btn-generate-cyan" title="Ask / Send Command">
+                  ⚡
+                </button>
+              </div>
+            </form>
+
             {/* Bottom 4 Feature Cards Grid (Matching reference mockup layout) */}
             <div className="bottom-cards-grid">
               <div className="feature-grid-card" onClick={triggerFileInput}>
@@ -487,34 +515,6 @@ function App() {
                 <div className="grid-card-sub">Ask any online safety or scam question</div>
               </div>
             </div>
-
-          </div>
-
-          {/* FIXED BOTTOM INPUT BAR CONTAINER (OUTSIDE SCROLLABLE WORKSPACE) */}
-          <div className="fixed-bottom-input-container">
-            <form onSubmit={handleSendMessage} className="bottom-input-bar">
-              <input
-                ref={chatInputRef}
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Initiate a query or send a command to mai-assistant..."
-                className="main-chat-input"
-              />
-
-              <div className="input-bottom-row">
-                <div className="input-toolbar-left">
-                  <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">📎</button>
-                  <button type="button" onClick={triggerFileInput} className="btn-pill-tool">💡 Reasoning</button>
-                  <button type="button" onClick={triggerFileInput} className="btn-pill-tool">✏️ Upload Image</button>
-                  <button type="button" onClick={() => showToast("🔎 Reverse Search & Deep Research Tools ready")} className="btn-pill-tool">📊 Deep Research</button>
-                </div>
-
-                <button type="submit" disabled={loadingChat} className="btn-generate-cyan" title="Ask / Send Command">
-                  ⚡
-                </button>
-              </div>
-            </form>
           </div>
         </main>
       </div>
