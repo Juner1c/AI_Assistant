@@ -728,7 +728,7 @@ html, body {
   color: var(--color-muted);
 }
 
-/* Bottom Control Input Bar (Sleek Input Container matching Katteb / ChatGPT mockup) */
+/* Bottom Control Input Bar (Sticky / Pinned at bottom so it doesn't scroll away while typing) */
 .bottom-input-bar {
   display: flex;
   flex-direction: column;
@@ -737,15 +737,17 @@ html, body {
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-top: 6px;
-  position: relative;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06), 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin-top: 8px;
+  position: sticky;
+  bottom: 8px;
+  z-index: 100;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .bottom-input-bar:focus-within {
   border-color: var(--color-2);
-  box-shadow: 0 4px 20px rgba(56, 116, 255, 0.12);
+  box-shadow: 0 0 25px rgba(56, 116, 255, 0.25);
 }
 
 .main-chat-input {
