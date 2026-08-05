@@ -13,14 +13,13 @@ const getDefaultBackendUrl = () => {
 function App() {
   const [backendUrl, setBackendUrl] = useState(() => {
     const saved = localStorage.getItem('mindspark_backend_url');
-    // If viewing over HTTPS (e.g. Netlify) and saved URL is un-encrypted http:, force default Render HTTPS URL
     if (window.location.protocol === 'https:' && saved && saved.startsWith('http:')) {
       localStorage.setItem('mindspark_backend_url', getDefaultBackendUrl());
       return getDefaultBackendUrl();
     }
     return saved || getDefaultBackendUrl();
   });
-  const [serverStatus, setServerStatus] = useState('checking'); // 'online', 'offline', 'checking'
+  const [serverStatus, setServerStatus] = useState('checking');
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -31,13 +30,13 @@ function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // 'about', 'features', 'how-it-works', 'blog', 'server', or null
+  const [activeModal, setActiveModal] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'about', 'features', 'how-it-works'
 
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
 
-  // Check backend server connection on startup or URL change (with auto-retry for Render cold starts)
   useEffect(() => {
     let timer;
     let active = true;
@@ -56,7 +55,6 @@ function App() {
       } catch (err) {
         if (active) {
           setServerStatus('offline');
-          // Auto retry every 6 seconds to wake up Render free container from sleep
           timer = setTimeout(ping, 6000);
         }
       }
@@ -75,7 +73,6 @@ function App() {
     setBackendUrl(formatted);
     localStorage.setItem('mindspark_backend_url', formatted);
     showToast(`🌐 Backend URL updated to ${formatted}`);
-    checkServerHealth(formatted);
   };
 
   const showToast = (msg) => {
@@ -83,8 +80,6 @@ function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-
-  // Handle image selection
   const handleImageChange = (e) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -115,21 +110,18 @@ function App() {
     }
   };
 
-  // Trigger file selection dialog programmatically
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Focus chat input
   const focusChatInput = () => {
     if (chatInputRef.current) {
       chatInputRef.current.focus();
     }
   };
 
-  // Scan image via FastAPI backend and automatically assist user based on scan results
   const handleScan = async () => {
     if (!selectedFile) return;
     setLoadingScan(true);
@@ -143,7 +135,6 @@ function App() {
       setScanResult(data);
       showToast("✅ Image scan complete!");
 
-      // Auto-assist user in AI Chat window based on scan data results
       try {
         const isFake = data.is_ai_generated;
         const confidencePct = Math.round((data.confidence || 0) * 100);
@@ -165,10 +156,7 @@ function App() {
         const aiAdvice = chatResponse.data.ai_response;
         setMessages((prev) => [
           ...prev,
-          {
-            sender: 'ai',
-            text: aiAdvice
-          }
+          { sender: 'ai', text: aiAdvice }
         ]);
       } catch (chatErr) {
         console.error("Auto AI assistance failed:", chatErr);
@@ -190,7 +178,6 @@ function App() {
     }
   };
 
-  // Send message to FastAPI privacy chat backend
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!inputMessage.trim()) return;
@@ -198,7 +185,6 @@ function App() {
     const userMsg = inputMessage;
     setInputMessage('');
     
-    // Capture history before adding current message
     const currentHistory = messages.slice(-6).map(m => ({ sender: m.sender, text: m.text }));
     
     setMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
@@ -239,7 +225,6 @@ function App() {
     }
   };
 
-  // Open Google or TinEye direct reverse search URL in a new tab
   const handleReverseSearch = (engine) => {
     if (scanResult && scanResult.web_context) {
       let targetUrl = scanResult.web_context.google_lens_url;
@@ -249,40 +234,9 @@ function App() {
   };
 
   return (
-    <div className="mindspark-page">
-      {/* Toast Notification Popup */}
-      {toastMessage && (
-        <div className="app-toast-popup">
-          {toastMessage}
-        </div>
-      )}
-
-      {/* Top Navbar */}
-      <nav className="navbar">
-        <div className="nav-brand" onClick={() => setActiveModal('about')} style={{ cursor: 'pointer' }}>
-          <div className="brand-text">
-            <span className="brand-name">mai-<br />Assistant</span>
-          </div>
-        </div>
-
-        <ul className="nav-links">
-          <li><button onClick={() => setActiveModal('about')} className="nav-btn-link">About</button></li>
-          <li><button onClick={() => setActiveModal('features')} className="nav-btn-link">Feature</button></li>
-          <li><button onClick={() => setActiveModal('how-it-works')} className="nav-btn-link">How It Works</button></li>
-        </ul>
-
-        <div className="nav-actions">
-          <button
-            className={`btn-server-status status-${serverStatus}`}
-            onClick={() => setActiveModal('server')}
-            title="Configure FastAPI Backend URL"
-          >
-            <span className="status-dot"></span>
-            {serverStatus === 'online' ? 'Online' : 'Connecting...'}
-          </button>
-          <button className="btn-add-chrome" onClick={() => setActiveModal('extension')}>Add to Chrome</button>
-        </div>
-      </nav>
+    <div className="dashboard-layout-wrapper">
+      {/* Toast Popup Notification */}
+      {toastMessage && <div className="app-toast-popup">{toastMessage}</div>}
 
       {/* Hidden File Input */}
       <input
@@ -294,131 +248,274 @@ function App() {
         style={{ display: 'none' }}
       />
 
-      {/* Main Content / Hero Section */}
-      <main className="hero-section">
-        <h1 className="hero-title">
-          See Through the Deception<br />
-          <span className="hero-title-accent">mai-assistant</span>
-        </h1>
+      {/* Main Dashboard Container */}
+      <div className="dashboard-container">
+        
+        {/* LEFT SIDEBAR NAVIGATION */}
+        <aside className="sidebar">
+          {/* Brand Header */}
+          <div className="sidebar-brand" onClick={() => setActiveModal('about')}>
+            <div className="brand-logo-box">K</div>
+            <div className="brand-title-wrap">
+              <span className="brand-title">mai-Assistant</span>
+            </div>
+          </div>
 
-        <p className="hero-subtitle">
-          Scan Image. Uncover Its Origin. Stay Safe Online.
-        </p>
+          {/* Search Box */}
+          <div className="sidebar-search-box" onClick={focusChatInput}>
+            <span className="search-icon">🔍</span>
+            <span className="search-placeholder">Search</span>
+            <span className="search-badge">⌘P</span>
+          </div>
 
-        {/* Central Interactive Grid Layout */}
-        <div className="mindspark-card-wrapper">
-          {/* Main Central Container Box */}
-          <div
-            className={`mindspark-main-card ${isDragging ? 'drag-active' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            {/* Top Welcome / Chat Assistant Section */}
-            <div className="welcome-chat-bubble">
-              Thank you for reaching out! As mai-assistant, I am specifically designed to focus on Trust & Safety, Deepfake Detection, and Scam Prevention.<br /><br />
-              I am here to help you:<br />
-              1. Analyze uploaded images for deepfakes and AI synthetic manipulation<br />
-              2. Evaluate suspicious messages or investment offers for scam risks<br />
-              3. Learn about digital privacy and local PII masking<br /><br />
-              Please let me know if you have a question about online safety, or upload an image or message for me to verify!
+          {/* Navigation Group 1: MAIN NAVIGATION */}
+          <div className="nav-group">
+            <span className="nav-group-title">MAIN NAVIGATION</span>
+            <button className={`sidebar-nav-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
+              <span className="nav-icon">💬</span> mai-Assistant Chat
+            </button>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('about')}>
+              <span className="nav-icon">🛡️</span> About
+            </button>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('features')}>
+              <span className="nav-icon">⚡</span> Feature
+            </button>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('how-it-works')}>
+              <span className="nav-icon">⚙️</span> How It Works
+            </button>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('extension')}>
+              <span className="nav-icon">🧩</span> Add to Chrome
+            </button>
+          </div>
+
+          {/* Navigation Group 2: OPTIMIZATION & TOOLS */}
+          <div className="nav-group">
+            <span className="nav-group-title">OPTIMIZATION & TOOLS</span>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('blog')}>
+              <span className="nav-icon">📰</span> Blog Articles <span className="nav-badge-count">23</span>
+            </button>
+            <button className="sidebar-nav-item" onClick={() => setActiveModal('server')}>
+              <span className="nav-icon">🌐</span> Server Status
+              <span className={`sidebar-status-dot status-${serverStatus}`}></span>
+            </button>
+          </div>
+
+          {/* Sidebar Bottom Banner & Profile Card */}
+          <div className="sidebar-bottom-section">
+            <div className="sidebar-promo-card">
+              <div className="promo-logo">K</div>
+              <div className="promo-title">mai-assistant Pro</div>
+              <div className="promo-sub">Trust & Safety, Deepfake Detection & Privacy</div>
+              <button className="btn-promo-action" onClick={() => setActiveModal('features')}>Explore Features</button>
             </div>
 
-            <div className="card-top-tag">
-              Write any command to mai-assistant
+            <div className="sidebar-profile-card">
+              <div className="profile-avatar">🛡️</div>
+              <div className="profile-info">
+                <span className="profile-name">mai-assistant</span>
+                <span className="profile-email">v1.0 Safety Engine</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* RIGHT MAIN PANEL WORKSPACE */}
+        <main className="main-panel">
+          
+          {/* Top Panel Header Bar */}
+          <header className="main-header">
+            <div className="header-left">
+              <div className="dropdown-selector" onClick={() => setActiveModal('about')}>
+                <span className="dropdown-logo">K</span>
+                <span className="dropdown-text">mai-Assistant</span>
+                <span className="dropdown-arrow">▾</span>
+              </div>
             </div>
 
-            {/* Uploaded File Banner / Selected Image Bar / Dropzone */}
-            {selectedFile ? (
-              <div className="file-preview-card">
-                <div className="file-preview-left">
-                  {previewUrl && <img src={previewUrl} alt="Upload preview" className="file-thumb" />}
-                  <div className="file-meta">
-                    <span className="file-name">{selectedFile.name}</span>
-                    <span className="file-status">
-                      {scanResult ? '✅ Scan Completed' : 'Ready for Sightengine Forensic Scan'}
-                    </span>
-                  </div>
+            <div className="header-right">
+              <div className="header-search-bar" onClick={focusChatInput}>
+                <span className="search-icon">🔍</span>
+                <span className="search-placeholder">Search</span>
+                <span className="search-badge">⌘P</span>
+              </div>
+
+              <button className="btn-new-chat" onClick={triggerFileInput}>
+                + New Scan
+              </button>
+
+              <div className="header-icon-buttons">
+                <button className="header-icon-btn" title="Backend Server Config" onClick={() => setActiveModal('server')}>⚙</button>
+                <button className="header-icon-btn" title="Blog Updates" onClick={() => setActiveModal('blog')}>🔔</button>
+                <button className="header-icon-btn" title="Add to Chrome" onClick={() => setActiveModal('extension')}>↗ Share</button>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Hero Workspace Area */}
+          <div className="workspace-content">
+            
+            {/* Center Logo Graphic */}
+            <div className="center-logo-glow">
+              <div className="logo-badge-icon">K</div>
+            </div>
+
+            {/* Hero Titles */}
+            <h1 className="main-hero-title">
+              See Through the Deception<br />
+              <span className="hero-highlight">How Can I <span className="highlight-text">Assist You Today?</span></span>
+            </h1>
+
+            <p className="main-hero-subtitle">
+              Scan Image. Uncover Its Origin. Stay Safe Online.
+            </p>
+
+            {/* Main Interactive Card Workspace Container */}
+            <div className="central-card-wrapper">
+              <div
+                className={`mindspark-main-card ${isDragging ? 'drag-active' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {/* Top Welcome / Chat Assistant Section */}
+                <div className="welcome-chat-bubble">
+                  Thank you for reaching out! As mai-assistant, I am specifically designed to focus on Trust & Safety, Deepfake Detection, and Scam Prevention.<br /><br />
+                  I am here to help you:<br />
+                  1. Analyze uploaded images for deepfakes and AI synthetic manipulation<br />
+                  2. Evaluate suspicious messages or investment offers for scam risks<br />
+                  3. Learn about digital privacy and local PII masking<br /><br />
+                  Please let me know if you have a question about online safety, or upload an image or message for me to verify!
                 </div>
 
-                {!scanResult && (
-                  <button onClick={handleScan} disabled={loadingScan} className="btn-scan-pill">
-                    {loadingScan ? 'Scanning...' : 'Scan Image'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="empty-drop-hint" onClick={triggerFileInput}>
-                Drag and Drop an <strong>image</strong> here or click <strong>Upload Image</strong> below
-              </div>
-            )}
-
-            {/* Notification / Scan Result Container */}
-            {scanResult && (
-              <div className={`scan-notification-banner ${scanResult.is_ai_generated ? 'result-fake' : 'result-real'}`}>
-                <div className="notification-header">
-                  <span className="notification-icon">{scanResult.is_ai_generated ? '⚠️' : '✅'}</span>
-                  <div>
-                    <strong>AI Detection Status:</strong> {scanResult.is_ai_generated ? 'Synthetic / AI Generated' : 'Real Photograph'}
-                    <span className="confidence-tag">({(scanResult.confidence * 100).toFixed(0)}% Confidence)</span>
-                  </div>
+                <div className="card-top-tag">
+                  ✦ Initiate a query or send a command to mai-assistant...
                 </div>
 
-                {/* Reverse Search Engine Quick Links */}
-                {scanResult.web_context && (
-                  <div className="reverse-search-bar">
-                    <span className="reverse-label">🌐 Whole-Image Reverse Search:</span>
-                    <div className="reverse-buttons">
-                      <button onClick={() => handleReverseSearch('google')} className="btn-rev-google">🔎 Google Full Image</button>
-                      <button onClick={() => handleReverseSearch('tineye')} className="btn-rev-tineye">🕵️ TinEye Full Photo</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Chat Conversation Messages Area */}
-            {messages.length > 0 && (
-              <div className="chat-content-area">
-                <div className="messages-scroll-window">
-                  {messages.map((msg, index) => (
-                    <div key={index} className={`chat-message ${msg.sender}`}>
-                      <span className="msg-avatar">{msg.sender === 'user' ? '👤' : '🤖'}</span>
-                      <div className="msg-body">
-                        <div className="msg-text">{msg.text}</div>
-                        {msg.scrubbed && (
-                          <div className="msg-scrubbed">
-                            🔒 Scrubbed PII sent to cloud: {msg.scrubbed}
-                          </div>
-                        )}
+                {/* Uploaded File Banner / Selected Image Bar / Dropzone */}
+                {selectedFile ? (
+                  <div className="file-preview-card">
+                    <div className="file-preview-left">
+                      {previewUrl && <img src={previewUrl} alt="Upload preview" className="file-thumb" />}
+                      <div className="file-meta">
+                        <span className="file-name">{selectedFile.name}</span>
+                        <span className="file-status">
+                          {scanResult ? '✅ Scan Completed' : 'Ready for Sightengine Forensic Scan'}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                  {loadingChat && <div className="typing-indicator">mai-assistant AI is processing request...</div>}
-                </div>
+
+                    {!scanResult && (
+                      <button onClick={handleScan} disabled={loadingScan} className="btn-scan-pill">
+                        {loadingScan ? 'Scanning...' : 'Scan Image'}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="empty-drop-hint" onClick={triggerFileInput}>
+                    Drag and Drop an <strong>image</strong> here or click <strong>Upload Image</strong> below
+                  </div>
+                )}
+
+                {/* Notification / Scan Result Container */}
+                {scanResult && (
+                  <div className={`scan-notification-banner ${scanResult.is_ai_generated ? 'result-fake' : 'result-real'}`}>
+                    <div className="notification-header">
+                      <span className="notification-icon">{scanResult.is_ai_generated ? '⚠️' : '✅'}</span>
+                      <div>
+                        <strong>AI Detection Status:</strong> {scanResult.is_ai_generated ? 'Synthetic / AI Generated' : 'Real Photograph'}
+                        <span className="confidence-tag">({(scanResult.confidence * 100).toFixed(0)}% Confidence)</span>
+                      </div>
+                    </div>
+
+                    {scanResult.web_context && (
+                      <div className="reverse-search-bar">
+                        <span className="reverse-label">🌐 Whole-Image Reverse Search:</span>
+                        <div className="reverse-buttons">
+                          <button onClick={() => handleReverseSearch('google')} className="btn-rev-google">🔎 Google Full Image</button>
+                          <button onClick={() => handleReverseSearch('tineye')} className="btn-rev-tineye">🕵️ TinEye Full Photo</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Chat Conversation Messages Area */}
+                {messages.length > 0 && (
+                  <div className="chat-content-area">
+                    <div className="messages-scroll-window">
+                      {messages.map((msg, index) => (
+                        <div key={index} className={`chat-message ${msg.sender}`}>
+                          <span className="msg-avatar">{msg.sender === 'user' ? '👤' : '🤖'}</span>
+                          <div className="msg-body">
+                            <div className="msg-text">{msg.text}</div>
+                            {msg.scrubbed && (
+                              <div className="msg-scrubbed">
+                                🔒 Scrubbed PII sent to cloud: {msg.scrubbed}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {loadingChat && <div className="typing-indicator">mai-assistant AI is processing request...</div>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Control Input Bar at Bottom */}
+                <form onSubmit={handleSendMessage} className="bottom-input-bar">
+                  <div className="input-toolbar-left">
+                    <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">📎</button>
+                    <button type="button" onClick={triggerFileInput} className="btn-pill-tool">💡 Reasoning</button>
+                    <button type="button" onClick={triggerFileInput} className="btn-pill-tool">✏️ Upload Image</button>
+                    <button type="button" onClick={() => showToast("🔎 Reverse Search & Deep Research Tools ready")} className="btn-pill-tool">📊 Deep Research</button>
+                  </div>
+
+                  <input
+                    ref={chatInputRef}
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Ask or Type about your situation..."
+                    className="main-chat-input"
+                  />
+
+                  <button type="submit" disabled={loadingChat} className="btn-generate-cyan">
+                    Ask
+                  </button>
+                </form>
               </div>
-            )}
+            </div>
 
-            {/* Control Input Bar at Bottom */}
-            <form onSubmit={handleSendMessage} className="bottom-input-bar">
-              <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">+</button>
+            {/* Bottom 4 Feature Cards Grid (Matching reference mockup layout) */}
+            <div className="bottom-cards-grid">
+              <div className="feature-grid-card" onClick={triggerFileInput}>
+                <div className="grid-card-icon icon-blue">📝</div>
+                <div className="grid-card-title">Deepfake Scanner</div>
+                <div className="grid-card-sub">Upload & analyze synthetic media artifacts</div>
+              </div>
 
-              <input
-                ref={chatInputRef}
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask or Type about your situation..."
-                className="main-chat-input"
-              />
+              <div className="feature-grid-card" onClick={() => setActiveModal('features')}>
+                <div className="grid-card-icon icon-pink">💡</div>
+                <div className="grid-card-title">Reverse Search</div>
+                <div className="grid-card-sub">Google Lens & TinEye whole-image tracking</div>
+              </div>
 
-              <button type="submit" disabled={loadingChat} className="btn-generate-cyan">
-                Ask
-              </button>
-            </form>
+              <div className="feature-grid-card" onClick={() => setActiveModal('how-it-works')}>
+                <div className="grid-card-icon icon-yellow">🖥️</div>
+                <div className="grid-card-title">PII Protection</div>
+                <div className="grid-card-sub">RA 10173 compliant local data masking</div>
+              </div>
+
+              <div className="feature-grid-card" onClick={focusChatInput}>
+                <div className="grid-card-icon icon-green">💬</div>
+                <div className="grid-card-title">Trust & Safety AI</div>
+                <div className="grid-card-sub">Ask any online safety or scam question</div>
+              </div>
+            </div>
+
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Interactive Feature Modals */}
       {activeModal && (
