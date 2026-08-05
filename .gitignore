@@ -20,3 +20,5 @@ pnpm-debug.log*
 .idea/
 .env
 .env.local
+.netlify/
+frontend/.netlify/

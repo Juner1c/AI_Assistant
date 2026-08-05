@@ -37,105 +37,6 @@ function App() {
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  const updateBackendUrl = (newUrl) => {
-    const formatted = newUrl.trim().replace(/\/+$/, '');
-    setBackendUrl(formatted);
-    localStorage.setItem('mindspark_backend_url', formatted);
-    showToast(`🌐 Backend URL updated to ${formatted}`);
-  };
-
-  // Send message to FastAPI privacy chat backend (with connection error handling & auto-retry)
-  const sendChatMessage = async (userMsg) => {
-    if (!userMsg || !userMsg.trim()) return;
-
-    // Capture history before sending
-    const currentHistory = messages.slice(-6).map(m => ({ sender: m.sender, text: m.text }));
-    
-    setLoadingChat(true);
-    const isFake = scanResult ? scanResult.is_ai_generated : false;
-
-    const formData = new URLSearchParams();
-    formData.append('user_message', userMsg);
-    formData.append('is_fake', isFake);
-    formData.append('chat_history', JSON.stringify(currentHistory));
-    if (scanResult) {
-      formData.append('scan_details', JSON.stringify({
-        is_ai_generated: scanResult.is_ai_generated,
-        confidence: Math.round((scanResult.confidence || 0) * 100),
-        model_used: scanResult.model_used,
-        flags: scanResult.flags || []
-      }));
-    }
-
-    try {
-      const response = await axios.post(`${backendUrl}/api/chat`, formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 15000
-      });
-
-      const aiReply = response.data.ai_response;
-      const scrubbed = response.data.scrubbed_message_sent_to_cloud;
-
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'ai', text: aiReply, scrubbed: scrubbed }
-      ]);
-      setPendingRetryMsg(null);
-    } catch (err) {
-      console.error("Chat API error:", err);
-      
-      // Connection lost handling: Save message for auto-retry upon reconnection
-      setPendingRetryMsg(userMsg);
-      showToast("⚠️ Network connection lost! Will auto-retry when online.");
-      
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'system-warning',
-          text: '⚠️ Connection lost while communicating with AI Assistant. Reconnecting automatically... Your conversation history is safe.',
-          retryText: userMsg
-        }
-      ]);
-    } finally {
-      setLoadingChat(false);
-    }
-  };
-
-  // Network connection (online/offline) monitoring and automatic conversation recovery
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      showToast("🟢 Internet connection restored! Resuming conversation...");
-      // Auto ping backend server health
-      axios.get(`${backendUrl}/api/health`, { timeout: 8000 })
-        .then(res => {
-          if (res.data && res.data.status === 'ok') {
-            setServerStatus('online');
-          }
-        })
-        .catch(() => {});
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      setServerStatus('offline');
-      showToast("⚠️ Connection lost! Your conversation history is safe.");
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [backendUrl]);
-
   // Check backend server connection on startup or URL change (with auto-retry for Render cold starts)
   useEffect(() => {
     let timer;
@@ -169,15 +70,18 @@ function App() {
     };
   }, [backendUrl]);
 
-  // Automatically retry sending pending message when connection is restored
-  useEffect(() => {
-    if ((isOnline && serverStatus === 'online') && pendingRetryMsg) {
-      const msgToRetry = pendingRetryMsg;
-      setPendingRetryMsg(null);
-      showToast("⚡ Resuming pending message to AI...");
-      sendChatMessage(msgToRetry);
-    }
-  }, [isOnline, serverStatus, pendingRetryMsg]);
+  const updateBackendUrl = (newUrl) => {
+    const formatted = newUrl.trim().replace(/\/+$/, '');
+    setBackendUrl(formatted);
+    localStorage.setItem('mindspark_backend_url', formatted);
+    showToast(`🌐 Backend URL updated to ${formatted}`);
+    checkServerHealth(formatted);
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
 
   // Handle image selection
@@ -286,16 +190,53 @@ function App() {
     }
   };
 
-
-
+  // Send message to FastAPI privacy chat backend
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!inputMessage.trim()) return;
 
     const userMsg = inputMessage;
     setInputMessage('');
+    
+    // Capture history before adding current message
+    const currentHistory = messages.slice(-6).map(m => ({ sender: m.sender, text: m.text }));
+    
     setMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
-    await sendChatMessage(userMsg);
+
+    setLoadingChat(true);
+    const isFake = scanResult ? scanResult.is_ai_generated : false;
+
+    const formData = new URLSearchParams();
+    formData.append('user_message', userMsg);
+    formData.append('is_fake', isFake);
+    formData.append('chat_history', JSON.stringify(currentHistory));
+    if (scanResult) {
+      formData.append('scan_details', JSON.stringify({
+        is_ai_generated: scanResult.is_ai_generated,
+        confidence: Math.round((scanResult.confidence || 0) * 100),
+        model_used: scanResult.model_used,
+        flags: scanResult.flags || []
+      }));
+    }
+
+    try {
+      const response = await axios.post(`${backendUrl}/api/chat`, formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const aiReply = response.data.ai_response;
+      const scrubbed = response.data.scrubbed_message_sent_to_cloud;
+
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: aiReply, scrubbed: scrubbed }
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [...prev, { sender: 'ai', text: 'System error connecting to AI.' }]);
+    } finally {
+      setLoadingChat(false);
+    }
   };
 
   // Open Google or TinEye direct reverse search URL in a new tab
@@ -463,37 +404,13 @@ function App() {
                 <div className="messages-scroll-window">
                   {messages.map((msg, index) => (
                     <div key={index} className={`chat-message ${msg.sender}`}>
-                      <span className="msg-avatar">
-                        {msg.sender === 'user' ? '👤' : msg.sender === 'system-warning' ? '⚠️' : '🤖'}
-                      </span>
+                      <span className="msg-avatar">{msg.sender === 'user' ? '👤' : '🤖'}</span>
                       <div className="msg-body">
                         <div className="msg-text">{msg.text}</div>
                         {msg.scrubbed && (
                           <div className="msg-scrubbed">
                             🔒 Scrubbed PII sent to cloud: {msg.scrubbed}
                           </div>
-                        )}
-                        {msg.retryText && (
-                          <button
-                            type="button"
-                            onClick={() => sendChatMessage(msg.retryText)}
-                            className="btn-retry-message"
-                            style={{
-                              marginTop: '8px',
-                              background: 'rgba(234, 179, 8, 0.2)',
-                              border: '1px solid rgba(234, 179, 8, 0.5)',
-                              color: '#fde047',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              fontSize: '0.78rem',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            ⚡ Retry Message Now
-                          </button>
                         )}
                       </div>
                     </div>
@@ -502,24 +419,6 @@ function App() {
                 </div>
               )}
             </div>
-
-            {/* Connection Warning Banner */}
-            {(!isOnline || serverStatus === 'offline') && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.15)',
-                borderTop: '1px solid rgba(239, 68, 68, 0.4)',
-                color: '#fca5a5',
-                fontSize: '0.82rem',
-                padding: '8px 14px',
-                textAlign: 'center',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}>
-                <span>⚠️ Connection lost to AI server. Reconnecting automatically... Your conversation history is safe.</span>
-              </div>
-            )}
 
             {/* Integrated Control Input Bar at Bottom */}
             <form onSubmit={handleSendMessage} className="bottom-input-bar">
@@ -534,7 +433,7 @@ function App() {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder={!isOnline || serverStatus === 'offline' ? "Reconnecting to AI server..." : "Ask about a scam or type your situation..."}
+                placeholder="Ask about a scam or type your situation..."
                 className="main-chat-input"
               />
 
@@ -685,59 +584,4 @@ function App() {
   );
 }
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error, errorInfo) {
-    console.error("App Error Boundary Caught:", error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0b0f19',
-          color: '#fff',
-          fontFamily: 'sans-serif',
-          padding: '20px',
-          textAlign: 'center'
-        }}>
-          <h1 style={{ color: '#38bdf8', marginBottom: '12px' }}>mai-assistant</h1>
-          <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Something unexpected occurred. Click below to reload.</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: '#38bdf8',
-              color: '#0b0f19',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            🔄 Reload Page
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-export default function RootApp() {
-  return (
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  );
-}
+export default App;

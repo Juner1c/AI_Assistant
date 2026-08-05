@@ -1,7 +1,7 @@
 [build]
-  site_id = "c5c60f12-ba1b-4cc3-a934-768896b00ca7"
   command = "npm run build"
   publish = "dist"
+  site_id = "c5c60f12-ba1b-4cc3-a934-768896b00ca7"
 
 [[redirects]]
   from = "/*"

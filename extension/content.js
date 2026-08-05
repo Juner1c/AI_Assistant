@@ -296,29 +296,18 @@ function setupChatForm(modalRoot, isFake) {
     chatLog.appendChild(aiLoadingElem);
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    const sendMessageWithRetry = (retryText) => {
-      chrome.runtime.sendMessage(
-        { action: "SEND_CHAT_MESSAGE", userMessage: retryText, isFake },
-        (response) => {
-          if (response && response.success && response.data && response.data.ai_response) {
-            aiLoadingElem.textContent = response.data.ai_response;
-          } else {
-            aiLoadingElem.textContent = "⚠️ Connection lost to AI backend server. Reconnecting automatically... Your conversation history is safe.";
-            
-            // Auto retry on window online event
-            const onOnlineHandler = () => {
-              window.removeEventListener("online", onOnlineHandler);
-              aiLoadingElem.textContent = "🟢 Connection restored! Retrying AI request...";
-              sendMessageWithRetry(retryText);
-            };
-            window.addEventListener("online", onOnlineHandler);
-          }
-          chatLog.scrollTop = chatLog.scrollHeight;
+    // Send chat message via background script
+    chrome.runtime.sendMessage(
+      { action: "SEND_CHAT_MESSAGE", userMessage: userText, isFake },
+      (response) => {
+        if (response && response.success && response.data.ai_response) {
+          aiLoadingElem.textContent = response.data.ai_response;
+        } else {
+          aiLoadingElem.textContent = "Failed to reach AI Safety Assistant backend.";
         }
-      );
-    };
-
-    sendMessageWithRetry(userText);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+    );
   });
 }
 
