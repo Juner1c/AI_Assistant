@@ -1,4 +1,5 @@
 [build]
+  site_id = "c5c60f12-ba1b-4cc3-a934-768896b00ca7"
   base = "frontend"
   command = "npm run build"
   publish = "dist"

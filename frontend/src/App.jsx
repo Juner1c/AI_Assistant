@@ -151,6 +151,12 @@ function App() {
         const chatFormData = new URLSearchParams();
         chatFormData.append('user_message', `Summarize the image analysis result and give me safety advice. The image is ${isFake ? 'AI Generated Fake' : 'Real Photograph'} with ${confidencePct}% confidence.`);
         chatFormData.append('is_fake', isFake);
+        chatFormData.append('scan_details', JSON.stringify({
+          is_ai_generated: isFake,
+          confidence: confidencePct,
+          model_used: data.model_used || 'Sightengine Forensic Engine',
+          flags: data.flags || []
+        }));
 
         const chatResponse = await axios.post(`${backendUrl}/api/chat`, chatFormData, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -161,7 +167,7 @@ function App() {
           ...prev,
           {
             sender: 'ai',
-            text: `📊 **Automated Scan Analysis & Assistance**:\n\n${aiAdvice}`
+            text: aiAdvice
           }
         ]);
       } catch (chatErr) {
@@ -191,6 +197,10 @@ function App() {
 
     const userMsg = inputMessage;
     setInputMessage('');
+    
+    // Capture history before adding current message
+    const currentHistory = messages.slice(-6).map(m => ({ sender: m.sender, text: m.text }));
+    
     setMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
 
     setLoadingChat(true);
@@ -199,6 +209,15 @@ function App() {
     const formData = new URLSearchParams();
     formData.append('user_message', userMsg);
     formData.append('is_fake', isFake);
+    formData.append('chat_history', JSON.stringify(currentHistory));
+    if (scanResult) {
+      formData.append('scan_details', JSON.stringify({
+        is_ai_generated: scanResult.is_ai_generated,
+        confidence: Math.round((scanResult.confidence || 0) * 100),
+        model_used: scanResult.model_used,
+        flags: scanResult.flags || []
+      }));
+    }
 
     try {
       const response = await axios.post(`${backendUrl}/api/chat`, formData, {
@@ -256,8 +275,8 @@ function App() {
         </ul>
 
         <div className="nav-actions">
-          <button 
-            className={`btn-server-status status-${serverStatus}`} 
+          <button
+            className={`btn-server-status status-${serverStatus}`}
             onClick={() => setActiveModal('server')}
             title="Configure FastAPI Backend URL for network group mates"
           >
@@ -270,13 +289,13 @@ function App() {
       </nav>
 
       {/* Hidden File Input */}
-      <input 
-        ref={fileInputRef} 
-        id="file-upload-hidden" 
-        type="file" 
-        accept="image/*" 
-        onChange={handleImageChange} 
-        style={{ display: 'none' }} 
+      <input
+        ref={fileInputRef}
+        id="file-upload-hidden"
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        style={{ display: 'none' }}
       />
 
       {/* Main Content / Hero Section */}
@@ -298,15 +317,15 @@ function App() {
         <div className="mindspark-card-wrapper">
           {/* Left Side Feature Pills */}
           <div className="side-pills left-pills">
-            <div 
-              className="pill-item clickable-pill" 
+            <div
+              className="pill-item clickable-pill"
               onClick={() => showToast("⚡ Sightengine Forensic API provides sub-second deepfake detection speed.")}
               title="Click to view performance info"
             >
               ⚡ Speed Performance <span className="pill-dot"></span>
             </div>
-            <div 
-              className="pill-item clickable-pill" 
+            <div
+              className="pill-item clickable-pill"
               onClick={() => showToast("👁️ Privacy Safeguard: All PII is masked locally before cloud processing.")}
               title="Click to view privacy info"
             >
@@ -315,7 +334,7 @@ function App() {
           </div>
 
           {/* Main Central Container Box */}
-          <div 
+          <div
             className={`mindspark-main-card ${isDragging ? 'drag-active' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -357,7 +376,7 @@ function App() {
                 <div className="notification-header">
                   <span className="notification-icon">{scanResult.is_ai_generated ? '⚠️' : '✅'}</span>
                   <div>
-                    <strong>AI Detection Status:</strong> {scanResult.is_ai_generated ? 'Synthetic / AI Generated' : 'Real Photograph'} 
+                    <strong>AI Detection Status:</strong> {scanResult.is_ai_generated ? 'Synthetic / AI Generated' : 'Real Photograph'}
                     <span className="confidence-tag">({(scanResult.confidence * 100).toFixed(0)}% Confidence)</span>
                   </div>
                 </div>
@@ -409,12 +428,12 @@ function App() {
                 🖼️ Upload Image
               </button>
 
-              <input 
+              <input
                 ref={chatInputRef}
-                type="text" 
-                value={inputMessage} 
-                onChange={(e) => setInputMessage(e.target.value)} 
-                placeholder="Ask about a scam or type your situation..." 
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Ask about a scam or type your situation..."
                 className="main-chat-input"
               />
 
@@ -431,7 +450,7 @@ function App() {
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close-btn" onClick={() => setActiveModal(null)}>✕</button>
-            
+
             {activeModal === 'about' && (
               <div>
                 <h2>🛡️ About mai-assistant AI Assistant</h2>
@@ -477,7 +496,7 @@ function App() {
               <div>
                 <h2>🧩 Add to Chrome Extension</h2>
                 <p>Scan any image on Facebook, news sites, or social media by right-clicking!</p>
-                
+
                 <div style={{ background: '#0b0f19', padding: '16px', borderRadius: '12px', margin: '14px 0', border: '1px solid rgba(56, 189, 248, 0.3)', textAlign: 'left' }}>
                   <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', marginBottom: '8px' }}>
                     🛡️ Google Chrome Extension Installation:
@@ -492,10 +511,10 @@ function App() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <a 
-                    href="https://github.com/Juner1c/AI_Assistant/archive/refs/heads/main.zip" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href="https://github.com/Juner1c/AI_Assistant/archive/refs/heads/main.zip"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="btn-generate-cyan"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', textAlign: 'center' }}
                   >
@@ -519,8 +538,8 @@ function App() {
                     FastAPI Backend URL:
                   </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       defaultValue={backendUrl}
                       id="input-backend-url"
                       placeholder="http://localhost:8000 or http://192.168.x.x:8000"
@@ -535,7 +554,7 @@ function App() {
                         outline: 'none'
                       }}
                     />
-                    <button 
+                    <button
                       className="btn-generate-cyan"
                       style={{ borderRadius: '8px', padding: '10px 16px' }}
                       onClick={() => {

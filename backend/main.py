@@ -7,6 +7,13 @@ import urllib.parse
 import re
 from typing import Optional
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+except Exception:
+    pass
+
 # 1. Initialize FastAPI app
 app = FastAPI(title="AI Image Detector & Safety Assistant (DPA RA 10173 Compliant)")
 
@@ -280,13 +287,43 @@ async def scan_image_url(request: ImageUrlRequest):
             "web_context": generate_reverse_search_context(image_url)
         }
 
+SYSTEM_PROMPT = """You are "mai-assistant", a highly intelligent, friendly, and professional Trust & Safety AI Assistant.
+
+YOUR CORE PURPOSE & EXPERTISE:
+1. Deepfake & Synthetic Media Analysis: You help users analyze image forensic scan results, understand AI confidence scores, and spot visual artifacts of AI generation or photo manipulation.
+2. Scam & Fraud Prevention: You advise users on identifying online scams (romance scams, phishing, fake investment schemes, imposter scams, and recycled "cheap-fake" photos used out of context).
+3. Digital Safety & Privacy Protection: You guide users on digital security best practices, data privacy laws (such as the Philippines Data Privacy Act RA 10173), and protecting Personally Identifiable Information (PII).
+4. Platform Guidance: You assist users with mai-assistant features (image scanner, Google Lens & TinEye reverse image search, Chrome extension).
+
+CONVERSATIONAL CONTEXT & FAREWELLS (CRITICAL):
+- Understand user intent naturally. Do NOT act confused when the user expresses gratitude or closes the conversation.
+- If the user says "thanks", "thank you", "appreciate it", or similar: Warmly reply (e.g., "You are very welcome! Stay safe online, and feel free to reach out anytime if you need help verifying an image or scam.").
+- If the user indicates they are finished or don't need any more help (e.g., "no more", "nothing more", "no thanks", "im good", "that's all", "bye", "nothing else"): Acknowledge smoothly and politely without re-prompting, questioning, or offering unnecessary lists (e.g., "Understood! Have a great day and stay safe online. I am here whenever you need assistance again.").
+
+HANDLING IMAGE SCANS:
+- When a user provides an image scan result or asks about an uploaded photo, IMMEDIATELY provide a clear, insightful, and actionable safety summary. Explain what the confidence score means, whether the photo shows deepfake indicators, and provide numbered steps for verifying it online. Jump straight into the advice without conversational filler.
+
+STRICT SCOPE & BOUNDARIES:
+- You are strictly a Trust & Safety, Deepfake Detection, and Security assistant.
+- If a user asks an off-topic or personal question (such as asking for your favorite color, hobbies, general coding, or non-safety topics):
+  Gently and politely explain what mai-assistant was built for in a warm tone, and invite them to ask about online safety or upload an image to verify.
+
+STRICT FORMATTING RULES (CRITICAL):
+- DO NOT use markdown symbols like asterisks (** or *) or hashes (#). Provide plain, clean, elegant text.
+- If providing steps, recommendations, or lists, ALWAYS use numbered lists (1., 2., 3.).
+"""
+
+import json
+
 @app.post("/api/chat")
 async def chat_with_ai(
     user_message: str = Form(...), 
     is_fake: bool = Form(...),
-    has_web_matches: Optional[bool] = Form(False)
+    has_web_matches: Optional[bool] = Form(False),
+    chat_history: Optional[str] = Form(None),
+    scan_details: Optional[str] = Form(None)
 ):
-    """ Scrub privacy data locally with Presidio, then talk to Groq Cloud LLM """
+    """ Scrub privacy data locally with Presidio, then talk to Groq Cloud 70B LLM with multi-turn memory """
     
     # Step A: Scrub PII locally (Fast Regex + Presidio if available)
     anonymized_text = fast_regex_scrub_pii(user_message)
@@ -302,41 +339,101 @@ async def chat_with_ai(
     ai_reply = ""
     
     if GROQ_API_KEY:
-        try:
-            headers = {
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "llama-3.1-8b-instant",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": anonymized_text}
-                ]
-            }
-            
-            response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=10)
-            response_data = response.json()
-            
-            if "choices" in response_data and len(response_data["choices"]) > 0:
-                ai_reply = response_data["choices"][0]["message"]["content"]
-        except Exception as e:
-            print(f"Groq API call error: {e}")
+        # Build multi-turn messages array with System Prompt + Chat History + Current Message
+        messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}]
+        
+        # Inject scan details as context if available
+        if scan_details:
+            messages_payload.append({"role": "system", "content": f"Current Active Image Scan Context: {scan_details}"})
+        
+        # Inject past chat history (up to last 6 messages) for conversational memory
+        if chat_history:
+            try:
+                history_list = json.loads(chat_history)
+                if isinstance(history_list, list):
+                    for msg in history_list[-6:]:
+                        role = "user" if msg.get("sender") == "user" else "assistant"
+                        content_text = fast_regex_scrub_pii(msg.get("text", ""))
+                        if content_text:
+                            messages_payload.append({"role": role, "content": content_text})
+            except Exception:
+                pass
 
-    # Seamless Intelligent Fallback if GROQ_API_KEY is not set or API call fails
+        # Add current user message
+        messages_payload.append({"role": "user", "content": anonymized_text})
+
+        # Models to try: Primary = llama-3.3-70b-versatile (Smartest), Fallback = llama-3.1-8b-instant
+        for model_name in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": model_name,
+                    "messages": messages_payload,
+                    "temperature": 0.6,
+                    "max_tokens": 600
+                }
+                
+                response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=12)
+                response_data = response.json()
+                
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    ai_reply = response_data["choices"][0]["message"]["content"]
+                    if ai_reply:
+                        break
+            except Exception as e:
+                print(f"Groq API call error with model {model_name}: {e}")
+
+    # Seamless Intelligent Fallback (Pure Clean Plain Text, No raw markdown symbols)
     if not ai_reply:
-        if is_fake:
+        msg_lower = user_message.lower().strip()
+        
+        # Thank you / Appreciation
+        if any(w in msg_lower for w in ["thanks", "thank you", "thx", "appreciate"]):
+            ai_reply = "You are very welcome! Stay safe online, and feel free to reach out anytime if you need help verifying an image or checking a suspicious message."
+        # Closing / Finished
+        elif any(phrase in msg_lower for phrase in ["no more", "nothing more", "no thanks", "im good", "i'm good", "that's all", "thats all", "nothing else", "no", "bye", "goodbye"]):
+            ai_reply = "Understood! Have a great day and stay safe online. I am here whenever you need assistance again."
+        # Check if message is asking about image scan results or analysis
+        elif any(word in msg_lower for word in ["summarize", "analysis", "confidence", "scan", "image", "photo", "picture", "fake", "authentic", "real", "deepfake"]):
+            if is_fake:
+                ai_reply = (
+                    "AI Forensic Notice: The image analysis detected synthetic pixel artifacts indicating this image is AI-generated / synthetic.\n\n"
+                    "If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media. "
+                    "You can verify this photo using the reverse search buttons above to see if it appears on public news sites."
+                )
+            else:
+                ai_reply = (
+                    "Trust & Safety Analysis: The forensic scan indicates this is a real photograph (0% AI synthetic confidence).\n\n"
+                    "However, to verify if this image is legitimate or being recycled out of context (a cheap fake), click the Whole-Image Reverse Search buttons above (Google Lens, TinEye).\n\n"
+                    "Safety Tip: Online scammers frequently steal real photos of innocent people and reuse them with fake headlines or investment scams. Always verify where the photo originally appeared."
+                )
+        # Greetings
+        elif msg_lower in ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "greetings", "hello!"]:
             ai_reply = (
-                f"⚠️ **AI Forensic Notice**: The image analysis detected synthetic pixel artifacts indicating this image is **AI-generated / synthetic**.\n\n"
-                f"If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media. "
-                f"Check the whole-image reverse search links above to see if this deepfake is circulating on public news sites."
+                "Hello! I am mai-assistant, your Trust & Safety AI Assistant.\n\n"
+                "I can help you analyze images for deepfakes, evaluate suspicious messages for scams, guide you on digital privacy, and verify photos with reverse search. How can I assist you today?"
             )
+        # Off-topic / personal questions
+        elif any(phrase in msg_lower for phrase in ["favorite color", "favourite color", "who are you", "what are you", "favorite food", "your age", "hobby", "recipe", "tell me a joke", "weather"]):
+            ai_reply = (
+                "I do not have personal traits like a favorite color or hobbies.\n\n"
+                "I was built specifically as a Trust & Safety AI Assistant to help you detect deepfakes, recognize online scams, and protect your digital privacy.\n\n"
+                "Feel free to ask me any questions about online safety or upload an image to verify!"
+            )
+        # General off-topic or general question fallback
         else:
             ai_reply = (
-                f"🛡️ **Trust & Safety Analysis**: The forensic scan indicates this is a **real photograph** (0% AI synthetic confidence).\n\n"
-                f"However, to verify if this image is legitimate or being recycled out of context ('cheap fake'), click the **Whole-Image Reverse Search** buttons above (Google Lens, TinEye).\n\n"
-                f"💡 *Safety Tip*: Online scammers frequently steal real photos of innocent people and reuse them with fake headlines or investment scams. Always verify where the photo originally appeared."
+                "Thank you for reaching out! As mai-assistant, I am specifically designed to focus on Trust & Safety, Deepfake Detection, and Scam Prevention.\n\n"
+                "I am here to help you:\n"
+                "1. Analyze uploaded images for deepfakes and AI synthetic manipulation\n"
+                "2. Evaluate suspicious messages or investment offers for scam risks\n"
+                "3. Learn about digital privacy and local PII masking\n\n"
+                "Please let me know if you have a question about online safety, or upload an image or message for me to verify!"
             )
+
     
     return {
         "original_message": user_message,
@@ -347,4 +444,4 @@ async def chat_with_ai(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
+
