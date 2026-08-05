@@ -260,31 +260,27 @@ function App() {
       {/* Top Navbar */}
       <nav className="navbar">
         <div className="nav-brand" onClick={() => setActiveModal('about')} style={{ cursor: 'pointer' }}>
-          <div className="brand-logo-icon">✦</div>
           <div className="brand-text">
-            <span className="brand-name">mai-assistant</span>
+            <span className="brand-name">mai-<br />Assistant</span>
           </div>
         </div>
 
         <ul className="nav-links">
           <li><button onClick={() => setActiveModal('about')} className="nav-btn-link">About</button></li>
-          <li><button onClick={() => setActiveModal('features')} className="nav-btn-link">Features</button></li>
+          <li><button onClick={() => setActiveModal('features')} className="nav-btn-link">Feature</button></li>
           <li><button onClick={() => setActiveModal('how-it-works')} className="nav-btn-link">How It Works</button></li>
-          <li><button onClick={() => setActiveModal('extension')} className="nav-btn-link" style={{ color: '#38bdf8', fontWeight: '700' }}>🧩 Add to Chrome</button></li>
-          <li><button onClick={() => setActiveModal('blog')} className="nav-btn-link">Blog <span className="badge-count">23</span></button></li>
         </ul>
 
         <div className="nav-actions">
           <button
             className={`btn-server-status status-${serverStatus}`}
             onClick={() => setActiveModal('server')}
-            title="Configure FastAPI Backend URL for network group mates"
+            title="Configure FastAPI Backend URL"
           >
             <span className="status-dot"></span>
-            {serverStatus === 'online' ? 'Backend Online' : serverStatus === 'checking' ? 'Waking Backend...' : 'Connecting...'}
+            {serverStatus === 'online' ? 'Online' : 'Connecting...'}
           </button>
-          <button className="btn-lang-select" onClick={() => setActiveModal('extension')} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}>🧩 Add to Chrome</button>
-          <button className="btn-get-started" onClick={triggerFileInput}>Get Started</button>
+          <button className="btn-add-chrome" onClick={() => setActiveModal('extension')}>Add to Chrome</button>
         </div>
       </nav>
 
@@ -300,39 +296,17 @@ function App() {
 
       {/* Main Content / Hero Section */}
       <main className="hero-section">
-        <div className="smarter-badge" onClick={focusChatInput} style={{ cursor: 'pointer' }}>
-          <span>✨ Smarter chats, instant solutions</span>
-        </div>
-
         <h1 className="hero-title">
-          Chat Smarter, Not Harder – <br />
-          <span className="hero-title-accent">Meet mai-assistant<span className="blinking-cursor">|</span></span>
+          See Through the Deception<br />
+          <span className="hero-title-accent">mai-assistant</span>
         </h1>
 
         <p className="hero-subtitle">
-          Your Ultimate AI Chat Partner – Instant Answers, Endless Knowledge!
+          Scan Image. Uncover Its Origin. Stay Safe Online.
         </p>
 
         {/* Central Interactive Grid Layout */}
         <div className="mindspark-card-wrapper">
-          {/* Left Side Feature Pills */}
-          <div className="side-pills left-pills">
-            <div
-              className="pill-item clickable-pill"
-              onClick={() => showToast("⚡ Sightengine Forensic API provides sub-second deepfake detection speed.")}
-              title="Click to view performance info"
-            >
-              ⚡ Speed Performance <span className="pill-dot"></span>
-            </div>
-            <div
-              className="pill-item clickable-pill"
-              onClick={() => showToast("👁️ Privacy Safeguard: All PII is masked locally before cloud processing.")}
-              title="Click to view privacy info"
-            >
-              👁️ User Confidentiality <span className="pill-dot"></span>
-            </div>
-          </div>
-
           {/* Main Central Container Box */}
           <div
             className={`mindspark-main-card ${isDragging ? 'drag-active' : ''}`}
@@ -340,11 +314,16 @@ function App() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <div className="card-top-tag">
-              ✦ Write any request or command to mai-assistant
+            {/* Top Welcome / Chat Assistant Section */}
+            <div className="welcome-chat-bubble">
+              Hello! I am your mai-assistant Trust & Safety Assistant. Ask me anything or Upload an Image to analyze.
             </div>
 
-            {/* Uploaded File Banner / Selected Image Bar */}
+            <div className="card-top-tag">
+              Write any command to mai-assistant
+            </div>
+
+            {/* Uploaded File Banner / Selected Image Bar / Dropzone */}
             {selectedFile ? (
               <div className="file-preview-card">
                 <div className="file-preview-left">
@@ -357,7 +336,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Show 'Scan Image' button ONLY IF the image has NOT yet been scanned */}
                 {!scanResult && (
                   <button onClick={handleScan} disabled={loadingScan} className="btn-scan-pill">
                     {loadingScan ? 'Scanning...' : 'Scan Image'}
@@ -366,7 +344,7 @@ function App() {
               </div>
             ) : (
               <div className="empty-drop-hint" onClick={triggerFileInput}>
-                📁 Drag & drop an image here or click <strong>Upload Image</strong> below
+                Drag and Drop an <strong>image</strong> here or click <strong>Upload Image</strong> below
               </div>
             )}
 
@@ -394,13 +372,9 @@ function App() {
               </div>
             )}
 
-            {/* Chat Conversation Area */}
-            <div className="chat-content-area">
-              {messages.length === 0 ? (
-                <div className="welcome-chat-bubble">
-                  Hello! I am your mai-assistant Trust & Safety Assistant. Ask me anything or upload an image to analyze for deepfakes.
-                </div>
-              ) : (
+            {/* Chat Conversation Messages Area */}
+            {messages.length > 0 && (
+              <div className="chat-content-area">
                 <div className="messages-scroll-window">
                   {messages.map((msg, index) => (
                     <div key={index} className={`chat-message ${msg.sender}`}>
@@ -417,23 +391,19 @@ function App() {
                   ))}
                   {loadingChat && <div className="typing-indicator">mai-assistant AI is processing request...</div>}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Integrated Control Input Bar at Bottom */}
+            {/* Control Input Bar at Bottom */}
             <form onSubmit={handleSendMessage} className="bottom-input-bar">
               <button type="button" onClick={triggerFileInput} className="btn-icon-plus" title="Add File / Attachment">+</button>
-
-              <button type="button" onClick={triggerFileInput} className="btn-bar-pill pill-upload">
-                🖼️ Upload Image
-              </button>
 
               <input
                 ref={chatInputRef}
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask about a scam or type your situation..."
+                placeholder="Ask or Type about your situation..."
                 className="main-chat-input"
               />
 
