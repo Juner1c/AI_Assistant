@@ -294,11 +294,11 @@ YOUR CORE PURPOSE & EXPERTISE:
 3. Digital Safety & Privacy Protection: You guide users on digital security best practices, data privacy laws (such as the Philippines Data Privacy Act RA 10173), and protecting Personally Identifiable Information (PII).
 4. Platform Guidance: You assist users with mai-assistant features (image scanner, Google Lens & TinEye reverse image search, Chrome extension).
 
-SCAM EVALUATION & IMAGE QUESTIONS (CRITICAL):
-- If a user asks "is this scammer?", "is this a scam?", "is this person real?", "should I trust this?", or asks about a suspicious situation:
-  1. Always check and evaluate the active image scan context or previous chat history if available.
-  2. If the scanned photo is a real photograph (0% AI synthetic confidence), warn the user that scammers frequently steal real photos of innocent people off social media to build fake profiles ("cheap fakes"). Advise them to use Google Lens or TinEye above to check where the photo originally appeared online before trusting the person.
-  3. If the scanned photo is AI-generated (deepfake), explain that using synthetic photos of people is a major red flag for romance scams, investment fraud, and fake profiles.
+EVALUATING SCAMS & SUSPICIOUS QUESTIONS (CRITICAL):
+- If the user asks "is this scammer?", "is this a scam?", or asks whether a situation/photo is suspicious:
+  - Look at the active image scan context. If the image is AI-generated (is_fake=True), warn them that synthetic images are heavily used in romance scams, fake investment profiles, and imposter fraud.
+  - If the image is a real photograph (is_fake=False), explain that while the photo itself is authentic, scammers regularly steal photos of real innocent people to build fake social media profiles or investment schemes. Advise them to verify if the person asks for money, crypto, or gift cards, and recommend reverse searching with Google Lens or TinEye.
+  - NEVER reply with a generic introduction like "Thank you for reaching out..." when answering a scam question. Answer their question directly!
 
 CONVERSATIONAL CONTEXT & FAREWELLS:
 - Understand user intent naturally. Do NOT act confused when the user expresses gratitude or closes the conversation.
@@ -350,6 +350,10 @@ async def chat_with_ai(
         # Inject scan details as context if available
         if scan_details:
             messages_payload.append({"role": "system", "content": f"Current Active Image Scan Context: {scan_details}"})
+        elif is_fake:
+            messages_payload.append({"role": "system", "content": "Current Active Image Scan Context: The uploaded image was detected as AI-Generated Synthetic Fake media."})
+        else:
+            messages_payload.append({"role": "system", "content": "Current Active Image Scan Context: The uploaded image was detected as a Real Photograph (0% AI confidence)."})
         
         # Inject past chat history (up to last 6 messages) for conversational memory
         if chat_history:
@@ -401,19 +405,32 @@ async def chat_with_ai(
         # Closing / Finished
         elif any(phrase in msg_lower for phrase in ["no more", "nothing more", "no thanks", "im good", "i'm good", "that's all", "thats all", "nothing else", "no", "bye", "goodbye"]):
             ai_reply = "Understood! Have a great day and stay safe online. I am here whenever you need assistance again."
-        # Check if message is asking about image scan results, scam risk, or person
-        elif any(word in msg_lower for word in ["summarize", "analysis", "confidence", "scan", "image", "photo", "picture", "fake", "authentic", "real", "deepfake", "scam", "scammer", "fraud", "legit", "trust", "safe", "suspicious", "danger", "warning", "phishing", "invest", "who"]):
+        # Scam verification questions
+        elif any(word in msg_lower for word in ["scam", "scammer", "scams", "fraud", "phishing", "suspicious", "legit"]):
+            if is_fake:
+                ai_reply = (
+                    "Warning: High scam risk! The forensic scan detected that this image is AI-generated / synthetic.\n\n"
+                    "Online scammers frequently generate synthetic portraits to create fake identities for romance scams, crypto investment fraud, or impersonation. Do not send money, gift cards, or personal banking information."
+                )
+            else:
+                ai_reply = (
+                    "Scam Evaluation: While the image itself appears to be a real photograph (0% AI synthetic confidence), exercise extreme caution.\n\n"
+                    "Online scammers frequently steal real photos of innocent people from social media and reuse them with fake names to create romance or investment scams. "
+                    "If this person is asking for money, gift cards, or crypto investments, it is likely a scam. You can use the Google Lens or TinEye reverse search buttons above to see where this photo originally appeared online."
+                )
+        # Check if message is asking about image scan results or analysis
+        elif any(word in msg_lower for word in ["summarize", "analysis", "confidence", "scan", "image", "photo", "picture", "fake", "authentic", "real", "deepfake"]):
             if is_fake:
                 ai_reply = (
                     "AI Forensic Notice: The image analysis detected synthetic pixel artifacts indicating this image is AI-generated / synthetic.\n\n"
-                    "If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media (a major red flag for romance or investment scams). "
+                    "If someone sent you this image claiming it depicts a real event or real person, exercise extreme caution as it is synthetic media. "
                     "You can verify this photo using the reverse search buttons above to see if it appears on public news sites."
                 )
             else:
                 ai_reply = (
                     "Trust & Safety Analysis: The forensic scan indicates this is a real photograph (0% AI synthetic confidence).\n\n"
-                    "However, if someone you do not know sent you this photo claiming to be an investor, romance partner, or official, beware of impersonation scams (cheap fakes). Online scammers frequently steal real photos of innocent people off social media to build fake profiles.\n\n"
-                    "We recommend clicking the Whole-Image Reverse Search buttons above (Google Lens, TinEye) to verify where the photo originally appeared on the web before trusting them."
+                    "However, to verify if this image is legitimate or being recycled out of context (a cheap fake), click the Whole-Image Reverse Search buttons above (Google Lens, TinEye).\n\n"
+                    "Safety Tip: Online scammers frequently steal real photos of innocent people and reuse them with fake headlines or investment scams. Always verify where the photo originally appeared."
                 )
         # Greetings
         elif msg_lower in ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "greetings", "hello!"]:
