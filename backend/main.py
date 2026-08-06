@@ -334,7 +334,7 @@ async def chat_with_ai(
         except Exception:
             pass
     
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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").strip()
     ai_reply = ""
     
     if GROQ_API_KEY:
