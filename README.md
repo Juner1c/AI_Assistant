@@ -1,6 +1,6 @@
-# ✦ MindSpark: AI Detector & Deepfake Safety Assistant
+# ✦ Mai-asistant: AI Detector & Deepfake Safety Assistant
 
-MindSpark is an end-to-end Trust & Safety solution designed for **AI Deepfake Forensic Analysis**, **Reverse Image Search Tracking**, **Local PII Privacy Masking**, and a **Chrome Extension** for right-click web scanning.
+Mai-asistant is an end-to-end Trust & Safety solution designed for **AI Deepfake Forensic Analysis**, **Reverse Image Search Tracking**, **Local PII Privacy Masking**, and a **Chrome Extension** for right-click web scanning.
 
 ---
 
